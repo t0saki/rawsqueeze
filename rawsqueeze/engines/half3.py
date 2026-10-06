@@ -19,16 +19,30 @@ DESIGN.md section 2.5.  Encode (even-sized RGGB-like Bayer mosaic ``m``):
 6. ``D = (G1 - G2) + 0.5`` float32 -> ``H3DG`` (gray VarDCT, distance ``dD`` = ``d``).
 7. ``SATM = zstd19(packbits(S))`` (zstd applied by the container writer).
 8. ``H3RG`` and ``H3DG`` are encoded in two threads, libjxl threads split 3:1.
+9. Max-error guard (on by default; ``extra`` keys ``fixup`` / ``fixup_k`` / ``fixup_t``): the
+   streams are decoded in-process and every unsaturated pixel with
+   ``|err| > max(t * (wl - blk_p), k * sigma_p(x))`` (defaults ``t = 0.2 * d``, i.e. 0.04 =
+   158 DN at 12 bit for d 0.2, and ``k = 8``; ``sigma`` from the noise model, absolute
+   threshold only without one) is stored
+   exactly in the sparse ``H3FX`` chunk (critical, zstd): sorted pixel indices as LEB128
+   deltas + original uint16 values (:func:`pack_fixup`).  It catches the D-plane clamp
+   (libjxl clamps D below ~-0.0038, i.e. ``G1 - G2 < -0.504``: one-sided errors of hundreds of
+   DN) and partially saturated quads.  DC-S9 vl: 38-5101 pixels, 0.02-0.29 % of the file,
+   max |err| 590-799 -> 158 DN, +0.25 s encode.  HEAD ``codec.half3.fixup`` records k, t, n
+   and the max error before/after.  The in-process decode also gives the exact
+   reconstruction for free (``EngineOutput.recon`` -> ``recon_sha256`` / ``--verify``).
 
 Decode uses only HEAD + chunks (never LibRaw): inverse matrix, inverse WB, ``G1/G2 = G -/+ D/2``,
-de-normalise with ``clip(rint(n*(wl-blk)+blk), blk, wl-1)`` (``wl`` without a mask), then
-``m[S] = wl`` -- so unmasked pixels never decode as clipped.
+de-normalise with ``clip(rint(n*(wl-blk)+blk), blk, wl-1)`` (``wl`` without a mask), then the
+``H3FX`` values (if present; files without the chunk decode as before), then ``m[S] = wl`` --
+so unmasked pixels never decode as clipped.
 """
 
 from __future__ import annotations
 
 import math
 import os
+import struct
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any
@@ -103,6 +117,239 @@ def apply_satm(
     mask = unpack_mask(bytes(b), out.shape)
     out[mask] = np.uint16(white)
     return int(np.count_nonzero(mask))
+
+
+# ---------------------------------------------------------------------------------------
+# max-error guard: sparse fix-up chunk H3FX (shared with gat4)
+
+FIXUP_FOURCC = "H3FX"
+FIXUP_VERSION = 1
+FIXUP_DEFAULT_K = 8.0
+"""Default ``k``: a pixel is patched when ``|err| > max(t * (wl - blk), k * sigma(x))``."""
+FIXUP_T_PER_D = 0.2
+"""Default ``t = 0.2 * d`` (fraction of ``wl - blk``): the codec error scales with d, so the
+guard costs about the same share of the file at every preset (d 0.1 / 0.2 / 0.3 ->
+t 0.02 / 0.04 / 0.06 = 79 / 158 / 237 DN on a 12-bit 128..4079 range; P1060444 0.25 / 0.29 /
+0.23 % of the file)."""
+FIXUP_DEFAULT_T = round(FIXUP_T_PER_D * DEFAULT_D, 6)
+"""``t`` at the default d (0.04)."""
+FIXUP_MAX_FRAC = 2e-3
+"""At most this fraction of the pixels is patched (the worst ones by ``|err| / threshold``)."""
+FIXUP_MIN_CAP = 1024
+"""... but never fewer than this many pixels (small crops)."""
+_FIXUP_HDR = struct.Struct("<BBHIII")  # version, flags, reserved, n, height, width
+
+
+def _varint_encode(v: np.ndarray) -> bytes:
+    """Unsigned LEB128 of a 1-D uint64 array (vectorised)."""
+    v = np.asarray(v, dtype=np.uint64)
+    if v.size == 0:
+        return b""
+    nb = np.ones(v.size, dtype=np.int64)
+    t = v >> np.uint64(7)
+    while True:
+        more = t > 0
+        if not more.any():
+            break
+        nb += more
+        t >>= np.uint64(7)
+    starts = np.cumsum(nb) - nb
+    out = np.empty(int(nb.sum()), dtype=np.uint8)
+    for j in range(int(nb.max())):
+        sel = nb > j
+        byte = (v[sel] >> np.uint64(7 * j)) & np.uint64(0x7F)
+        byte |= np.where(nb[sel] - 1 > j, np.uint64(0x80), np.uint64(0))
+        out[starts[sel] + j] = byte.astype(np.uint8)
+    return out.tobytes()
+
+
+def _varint_decode(b: np.ndarray, n: int) -> tuple[np.ndarray, int]:
+    """Decode ``n`` LEB128 values (each <= 5 bytes) from the start of uint8 array ``b``.
+
+    Returns ``(values uint64, bytes consumed)``; ``ValueError`` on truncated/overlong input.
+    """
+    if n == 0:
+        return np.zeros(0, dtype=np.uint64), 0
+    ends = np.flatnonzero(b < 0x80)
+    if ends.size < n:
+        raise ValueError("H3FX index stream truncated")
+    ends = ends[:n]
+    used = int(ends[-1]) + 1
+    starts = np.empty(n, dtype=np.int64)
+    starts[0] = 0
+    starts[1:] = ends[:-1] + 1
+    if int((ends - starts).max()) > 4:
+        raise ValueError("H3FX varint longer than 5 bytes")
+    bb = b[:used].astype(np.uint64)
+    grp = np.repeat(np.arange(n), ends - starts + 1)
+    shift = (np.arange(used) - starts[grp]).astype(np.uint64) * np.uint64(7)
+    contrib = (bb & np.uint64(0x7F)) << shift
+    return np.add.reduceat(contrib, starts), used
+
+
+def pack_fixup(idx: np.ndarray, values: np.ndarray, shape: Sequence[int]) -> bytes:
+    """``H3FX`` payload (uncompressed form; zstd-19 via the chunk flag).
+
+    ``<BBHIII`` header (version 1, flags 0, reserved 0, n, height, width), then ``n`` LEB128
+    deltas of the sorted row-major pixel indices (first delta = first index), then ``n``
+    original uint16 values split into a low-byte and a high-byte plane (compresses better).
+    """
+    idx = np.asarray(idx, dtype=np.int64).ravel()
+    vals = np.asarray(values).ravel()
+    H, W = int(shape[0]), int(shape[1])
+    if idx.size != vals.size:
+        raise ValueError("H3FX: index / value count mismatch")
+    if idx.size:
+        if idx[0] < 0 or idx[-1] >= H * W or np.any(np.diff(idx) <= 0):
+            raise ValueError("H3FX: indices must be strictly increasing and inside the mosaic")
+        if vals.min() < 0 or vals.max() > 0xFFFF:
+            raise ValueError("H3FX: values must fit in uint16")
+    deltas = np.diff(idx, prepend=0)  # first delta = first index
+    v16 = vals.astype("<u2")
+    lo = (v16 & 0xFF).astype(np.uint8)
+    hi = (v16 >> 8).astype(np.uint8)
+    return _FIXUP_HDR.pack(FIXUP_VERSION, 0, 0, idx.size, H, W) + _varint_encode(deltas) + lo.tobytes() + hi.tobytes()
+
+
+def unpack_fixup(b: bytes, shape: Sequence[int]) -> tuple[np.ndarray, np.ndarray]:
+    """Inverse of :func:`pack_fixup`; returns ``(flat indices int64, values uint16)``."""
+    from ..container import RsqFormatError
+
+    if len(b) < _FIXUP_HDR.size:
+        raise RsqFormatError("H3FX payload truncated")
+    ver, _flags, _res, n, H, W = _FIXUP_HDR.unpack_from(b, 0)
+    if ver != FIXUP_VERSION:
+        raise RsqFormatError(f"H3FX version {ver} not supported")
+    if (H, W) != (int(shape[0]), int(shape[1])):
+        raise RsqFormatError(f"H3FX is for a {H}x{W} mosaic, decoder has {tuple(shape)}")
+    body = np.frombuffer(b, dtype=np.uint8, offset=_FIXUP_HDR.size)
+    try:
+        deltas, used = _varint_decode(body, n)
+    except ValueError as e:
+        raise RsqFormatError(str(e)) from None
+    if body.size - used != 2 * n:
+        raise RsqFormatError(f"H3FX payload has {body.size - used} value bytes, expected {2 * n}")
+    idx = np.cumsum(deltas.astype(np.int64))
+    if n and (np.any(deltas[1:] == 0) or idx[-1] >= H * W):
+        raise RsqFormatError("H3FX indices not strictly increasing / outside the mosaic")
+    lo = body[used:used + n].astype(np.uint16)
+    hi = body[used + n:used + 2 * n].astype(np.uint16)
+    return idx, lo | (hi << 8)
+
+
+def fixup_select(
+    orig: np.ndarray,
+    rec: np.ndarray,
+    white: int,
+    blk: Sequence[int],
+    noise: Sequence[tuple[float, float]] | None,
+    *,
+    k: float = FIXUP_DEFAULT_K,
+    t: float = FIXUP_DEFAULT_T,
+    max_frac: float = FIXUP_MAX_FRAC,
+    min_cap: int = FIXUP_MIN_CAP,
+    masked: bool = True,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Pixels whose decode error exceeds ``max(t * (wl - blk_p), k * sigma_p(x))``.
+
+    ``orig``/``rec``: even-sized HxW mosaics (``orig`` unclamped; the target value is
+    ``min(orig, white)``).  ``noise``: per-position ``(g, s2)`` with ``sigma^2 = g * (x - blk)
+    + s2`` evaluated at the original value; ``None`` (or ``k == 0``) -> absolute threshold
+    only.  ``masked``: pixels ``>= white`` are restored by SATM and never patched.  If more
+    than ``max(max_frac * H * W, min_cap)`` pixels qualify, the ones with the largest
+    ``|err| / threshold`` are kept (bounds the chunk at ~0.5 % of a 24 MP file).  Returns ``(sorted flat indices, stats)``; stats: ``n_over``, ``capped``,
+    ``t_dn`` (absolute threshold per position), ``err_max_before``, ``err_max_after``.
+    """
+    H, W = orig.shape
+    sel_idx: list[np.ndarray] = []
+    sel_score: list[np.ndarray] = []
+    thr_dn: list[float] = []
+    err_before = 0
+    err_after = 0
+    for p, (dy, dx) in enumerate(cfa.POSITIONS):
+        o = orig[dy::2, dx::2]
+        tgt = np.minimum(o, white).astype(np.int32)
+        e = np.abs(rec[dy::2, dx::2].astype(np.int32) - tgt)
+        if masked:
+            e[o >= white] = 0
+        t_abs = max(1.0, float(t) * (white - blk[p]))
+        thr_dn.append(round(t_abs, 3))
+        sel = e > t_abs
+        if noise is not None and k > 0 and sel.any():
+            g, s2 = noise[p]
+            cand = np.flatnonzero(sel)
+            ec = e.ravel()[cand].astype(np.float64)
+            var = np.maximum(g * (tgt.ravel()[cand] - blk[p]) + s2, 0.0)
+            keep = ec * ec > (k * k) * var
+            cand = cand[keep]
+            sc = ec[keep] / np.maximum(t_abs, k * np.sqrt(var[keep]))
+        else:
+            cand = np.flatnonzero(sel)
+            sc = e.ravel()[cand] / t_abs
+        err_before = max(err_before, int(e.max()) if e.size else 0)
+        if cand.size:
+            e.ravel()[cand] = 0
+        err_after = max(err_after, int(e.max()) if e.size else 0)
+        w2 = e.shape[1]
+        yy, xx = np.divmod(cand, w2)
+        sel_idx.append((2 * yy + dy) * W + (2 * xx + dx))
+        sel_score.append(np.asarray(sc, dtype=np.float64))
+    idx = np.concatenate(sel_idx) if sel_idx else np.zeros(0, np.int64)
+    score = np.concatenate(sel_score) if sel_score else np.zeros(0)
+    n_over = int(idx.size)
+    cap = max(int(max_frac * H * W), int(min_cap))
+    capped = n_over > cap
+    if capped:
+        keep = np.argpartition(score, n_over - cap)[n_over - cap:] if cap > 0 else np.zeros(0, np.int64)
+        drop = np.ones(n_over, bool)
+        drop[keep] = False
+        # the dropped (smaller) errors bound the remaining maximum
+        err_after = max(err_after, int(np.max(np.abs(rec.ravel()[idx[drop]].astype(np.int32)
+                                                     - np.minimum(orig.ravel()[idx[drop]], white)))) if drop.any() else 0)
+        idx = idx[keep]
+    order = np.argsort(idx, kind="stable")
+    return idx[order].astype(np.int64), {
+        "n_over": n_over, "capped": capped, "t_dn": thr_dn,
+        "err_max_before": err_before, "err_max_after": err_after,
+    }
+
+
+def fixup_chunk(orig: np.ndarray, idx: np.ndarray, white: int) -> Chunk:
+    """``H3FX`` chunk storing ``min(orig, white)`` at ``idx``."""
+    vals = np.minimum(orig.ravel()[idx], white).astype(np.uint16)
+    return make_chunk(FIXUP_FOURCC, pack_fixup(idx, vals, orig.shape))
+
+
+def apply_fixup(out: np.ndarray, chunks: Mapping[str, bytes], *, required: bool) -> int:
+    """Write the ``H3FX`` values into ``out`` in place; returns #pixels patched.
+
+    A missing chunk is fine for files written without the guard; ``required`` (HEAD says
+    ``fixup.n > 0``) turns it into ``ValueError``.
+    """
+    b = chunks.get(FIXUP_FOURCC)
+    if b is None:
+        if required:
+            raise ValueError("HEAD records an H3FX fix-up but the H3FX chunk is missing")
+        return 0
+    idx, vals = unpack_fixup(bytes(b), out.shape)
+    out.reshape(-1)[idx] = vals
+    return int(idx.size)
+
+
+def fixup_options(extra: Mapping[str, Any], d: float = DEFAULT_D) -> tuple[bool, float, float]:
+    """``(enabled, k, t)`` from :attr:`EngineParams.extra` keys ``fixup`` / ``fixup_k`` / ``fixup_t``.
+
+    ``t`` defaults to ``FIXUP_T_PER_D * d``.
+    """
+    on = bool(extra.get("fixup", True))
+    k = float(extra.get("fixup_k", FIXUP_DEFAULT_K))
+    tv = extra.get("fixup_t")
+    t = float(tv) if tv is not None else FIXUP_T_PER_D * float(d)
+    if not (k >= 0 and math.isfinite(k)):
+        raise ValueError(f"fixup_k must be >= 0, got {k}")
+    if not (t > 0 and math.isfinite(t)):
+        raise ValueError(f"fixup_t must be > 0, got {t}")
+    return on, k, round(t, 6)
 
 
 def frame_roles(frame: RawFrame) -> dict[str, int]:
@@ -259,6 +506,60 @@ def gamut_blend(cam: Sequence[np.ndarray], M: np.ndarray, *, tolerance: float = 
     return min(1.0, a + 1e-3), npos
 
 
+def minimal_head(shape: Sequence[int], white: int, blk: Sequence[int]) -> dict[str, Any]:
+    """The HEAD fields a codec reconstruction needs (mosaic size, levels), for in-process decodes."""
+    return {"mosaic": {"height": int(shape[0]), "width": int(shape[1])},
+            "levels": {"white": int(white), "black_per_position": [int(v) for v in blk]}}
+
+
+def run_fixup(
+    orig: np.ndarray,
+    white: int,
+    blk: Sequence[int],
+    noise: Sequence[Any] | None,
+    chunks: Sequence[Chunk],
+    *,
+    k: float,
+    t: float,
+    reconstruct: Any,
+    max_frac: float = FIXUP_MAX_FRAC,
+) -> tuple[np.ndarray, dict[str, Any], Chunk | None]:
+    """Encoder side of the max-error guard (half3 and gat4).
+
+    Decodes the just-written codec chunks in-process (``reconstruct(payloads) -> clipped
+    mosaic``), selects the pixels with :func:`fixup_select` and returns ``(final recon as the
+    decoder will produce it, HEAD record, H3FX chunk or None)``.
+    """
+    from ..select import noise_g_s2
+
+    payloads = {c.name: c.payload for c in chunks}
+    rec = reconstruct(payloads)
+    gs2 = None
+    if noise is not None and len(noise) == 4:
+        try:
+            gs2 = [noise_g_s2(p) for p in noise]
+        except (TypeError, ValueError):
+            gs2 = None
+    masked = "SATM" in payloads
+    idx, st = fixup_select(orig, rec, white, blk, gs2, k=k, t=t, max_frac=max_frac, masked=masked)
+    fx = fixup_chunk(orig, idx, white) if idx.size else None
+    if fx is not None:
+        rec.reshape(-1)[idx] = np.minimum(orig.reshape(-1)[idx], white)  # == what apply_fixup writes
+    apply_satm(rec, payloads, white, required=False)
+    rec_info = {
+        "k": float(k),
+        "t": float(t),
+        "t_dn": st["t_dn"],
+        "noise": gs2 is not None,
+        "n": int(idx.size),
+        "n_over": st["n_over"],
+        "capped": bool(st["capped"]),
+        "err_max_before": st["err_max_before"],
+        "err_max_after": st["err_max_after"],
+    }
+    return rec, rec_info, fx
+
+
 def _matrix_from_json(v: Any) -> np.ndarray:
     a = np.asarray(v, dtype=np.float64)
     if a.shape != (3, 3):
@@ -335,27 +636,38 @@ class Half3Engine:
         if sat is not None:
             chunks.append(satm_chunk(sat))
 
+        block: dict[str, Any] = {
+            "d": d,
+            "dD": dD,
+            "wb": [float(v) for v in wb],
+            "wb_source": wb_source,
+            "M": M.tolist(),
+            "Minv": Minv.tolist(),
+            "matrix": bool(matrix_used),
+            "matrix_blend": round(float(alpha), 6),
+            "gamut_neg_sites": int(neg_sites),
+            "satmask": sat is not None,
+            "roles": [int(roles[r]) for r in ROLE_ORDER],
+            "normalize": "clip01",
+            "d_offset": 0.5,
+        }
+        recon = None
+        fx_on, fx_k, fx_t = fixup_options(params.extra, d)
+        if fx_on:
+            recon, block["fixup"], fx = run_fixup(
+                m, white, blk, params.noise, chunks, k=fx_k, t=fx_t,
+                reconstruct=lambda ch: _reconstruct(minimal_head(m.shape, white, blk), block, ch, nthreads),
+            )
+            if fx is not None:
+                chunks.append(fx)
+
         codec = {
             "effort": effort,
             "libjxl_version": jxl.libjxl_version(),
             "imagecodecs": jxl.imagecodecs_version(),
-            NAME: {
-                "d": d,
-                "dD": dD,
-                "wb": [float(v) for v in wb],
-                "wb_source": wb_source,
-                "M": M.tolist(),
-                "Minv": Minv.tolist(),
-                "matrix": bool(matrix_used),
-                "matrix_blend": round(float(alpha), 6),
-                "gamut_neg_sites": int(neg_sites),
-                "satmask": sat is not None,
-                "roles": [int(roles[r]) for r in ROLE_ORDER],
-                "normalize": "clip01",
-                "d_offset": 0.5,
-            },
+            NAME: block,
         }
-        return EngineOutput(chunks=chunks, codec=codec, head_extra={"mode": "lossy"})
+        return EngineOutput(chunks=chunks, codec=codec, head_extra={"mode": "lossy"}, recon=recon)
 
     def decode(
         self,
@@ -365,56 +677,67 @@ class Half3Engine:
         threads: int | None = None,
     ) -> np.ndarray:
         block = head["codec"][NAME]
-        H = int(head["mosaic"]["height"])
-        W = int(head["mosaic"]["width"])
-        if H % 2 or W % 2:
-            raise ValueError(f"half3 HEAD mosaic size must be even, got {H}x{W}")
+        out = _reconstruct(head, block, chunks, threads)
         white = int(head["levels"]["white"])
-        blk = [int(v) for v in head["levels"]["black_per_position"]]
-        roles = head_roles(head, block)
-        wb = [float(v) for v in block["wb"]]
-        Minv = _matrix_from_json(block["Minv"])
-        d_off = float(block.get("d_offset", 0.5))
-        for fc in ("H3RG", "H3DG"):
-            if fc not in chunks:
-                raise ValueError(f"half3 chunk {fc} missing")
-
-        t_rgb, t_d = split_threads_3_1(resolve_threads(threads))
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            f_rgb = ex.submit(jxl.decode, chunks["H3RG"], threads=t_rgb)
-            f_d = ex.submit(jxl.decode, chunks["H3DG"], threads=t_d)
-            rgb, Dq = f_rgb.result(), f_d.result()
-        rgb = _as_unit_float(rgb)
-        Dq = _as_unit_float(Dq)
-        h2, w2 = H // 2, W // 2
-        if rgb.shape != (h2, w2, 3):
-            raise ValueError(f"H3RG decoded to shape {rgb.shape}, expected {(h2, w2, 3)}")
-        Dq = Dq.reshape(h2, w2) if Dq.size == h2 * w2 else None
-        if Dq is None:
-            raise ValueError("H3DG decoded to unexpected size")
-
-        r64 = rgb.astype(np.float64)
-        cam = [r64[..., 0] * Minv[i, 0] + r64[..., 1] * Minv[i, 1] + r64[..., 2] * Minv[i, 2] for i in range(3)]
-        del r64, rgb
-        Dh = (Dq.astype(np.float64) - d_off) * 0.5
-        vals = {
-            "R": cam[0] / wb[0],
-            "G1": cam[1] + Dh,
-            "G2": cam[1] - Dh,
-            "B": cam[2] / wb[2],
-        }
-        # unmasked pixels never reach wl (the mask restores the clipped ones): no false clips
-        hi = white - 1 if "SATM" in chunks else white
-        out = np.empty((H, W), dtype=np.uint16)
-        for role in ROLE_ORDER:
-            k = roles[role]
-            dy, dx = cfa.POSITIONS[k]
-            x = vals[role] * float(white - blk[k]) + float(blk[k])
-            np.rint(x, out=x)
-            np.clip(x, blk[k], max(blk[k], hi), out=x)
-            out[dy::2, dx::2] = x.astype(np.uint16)
+        # order: clip (in _reconstruct) -> H3FX fix-up -> SATM
+        apply_fixup(out, chunks, required=int((block.get("fixup") or {}).get("n", 0)) > 0)
         apply_satm(out, chunks, white, required=bool(block.get("satmask", "SATM" in chunks)))
         return out
+
+
+def _reconstruct(
+    head: Mapping[str, Any], block: Mapping[str, Any], chunks: Mapping[str, bytes], threads: int | None
+) -> np.ndarray:
+    """Decode H3RG + H3DG into the clipped mosaic (no fix-up, no SATM)."""
+    H = int(head["mosaic"]["height"])
+    W = int(head["mosaic"]["width"])
+    if H % 2 or W % 2:
+        raise ValueError(f"half3 HEAD mosaic size must be even, got {H}x{W}")
+    white = int(head["levels"]["white"])
+    blk = [int(v) for v in head["levels"]["black_per_position"]]
+    roles = head_roles(head, block)
+    wb = [float(v) for v in block["wb"]]
+    Minv = _matrix_from_json(block["Minv"])
+    d_off = float(block.get("d_offset", 0.5))
+    for fc in ("H3RG", "H3DG"):
+        if fc not in chunks:
+            raise ValueError(f"half3 chunk {fc} missing")
+
+    t_rgb, t_d = split_threads_3_1(resolve_threads(threads))
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f_rgb = ex.submit(jxl.decode, chunks["H3RG"], threads=t_rgb)
+        f_d = ex.submit(jxl.decode, chunks["H3DG"], threads=t_d)
+        rgb, Dq = f_rgb.result(), f_d.result()
+    rgb = _as_unit_float(rgb)
+    Dq = _as_unit_float(Dq)
+    h2, w2 = H // 2, W // 2
+    if rgb.shape != (h2, w2, 3):
+        raise ValueError(f"H3RG decoded to shape {rgb.shape}, expected {(h2, w2, 3)}")
+    Dq = Dq.reshape(h2, w2) if Dq.size == h2 * w2 else None
+    if Dq is None:
+        raise ValueError("H3DG decoded to unexpected size")
+
+    r64 = rgb.astype(np.float64)
+    cam = [r64[..., 0] * Minv[i, 0] + r64[..., 1] * Minv[i, 1] + r64[..., 2] * Minv[i, 2] for i in range(3)]
+    del r64, rgb
+    Dh = (Dq.astype(np.float64) - d_off) * 0.5
+    vals = {
+        "R": cam[0] / wb[0],
+        "G1": cam[1] + Dh,
+        "G2": cam[1] - Dh,
+        "B": cam[2] / wb[2],
+    }
+    # unmasked pixels never reach wl (the mask restores the clipped ones): no false clips
+    hi = white - 1 if "SATM" in chunks else white
+    out = np.empty((H, W), dtype=np.uint16)
+    for role in ROLE_ORDER:
+        k = roles[role]
+        dy, dx = cfa.POSITIONS[k]
+        x = vals[role] * float(white - blk[k]) + float(blk[k])
+        np.rint(x, out=x)
+        np.clip(x, blk[k], max(blk[k], hi), out=x)
+        out[dy::2, dx::2] = x.astype(np.uint16)
+    return out
 
 
 def _as_unit_float(a: np.ndarray) -> np.ndarray:
@@ -432,12 +755,25 @@ ENGINE = Half3Engine()
 
 __all__ = [
     "ENGINE",
+    "FIXUP_DEFAULT_K",
+    "FIXUP_DEFAULT_T",
+    "FIXUP_FOURCC",
+    "FIXUP_MAX_FRAC",
+    "FIXUP_T_PER_D",
     "GAMUT_TOLERANCE",
     "Half3Engine",
     "OPSIN_ABSORBANCE",
     "OPSIN_BIAS",
     "XYZ_FROM_SRGB",
+    "apply_fixup",
     "apply_satm",
+    "fixup_chunk",
+    "fixup_options",
+    "fixup_select",
+    "minimal_head",
+    "pack_fixup",
+    "run_fixup",
+    "unpack_fixup",
     "gamut_blend",
     "saturation_mask",
     "satm_chunk",

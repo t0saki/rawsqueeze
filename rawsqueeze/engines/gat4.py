@@ -6,8 +6,10 @@ DESIGN.md section 2.6.  For each position ``p`` with noise ``(g, s2)`` (var = g*
   domain); ``a = rint(y * K)`` as uint16 with fixed ``K = 100`` codes per sigma; ``a`` is coded
   with ``jpegxl_encode(a, distance=d, effort=5)`` into ``G4P0..G4P3``.
 * Decode: ``y = a / K``; ``x = ((g*y/2)^2 - 3/8*g^2 - s2) / g``; ``rint(x + blk_p)`` clipped to
-  ``[0, wl-1]`` (``[0, wl]`` without a mask); saturated pixels restored from the same
-  ``SATM`` mask as half3, so unmasked pixels never decode as clipped.
+  ``[0, wl-1]`` (``[0, wl]`` without a mask); then the optional ``H3FX`` fix-up (the same
+  max-error guard as half3, ``engines.half3.run_fixup``; it rarely triggers here because the
+  errors are already noise-relative) and the same ``SATM`` mask as half3, so unmasked pixels
+  never decode as clipped.
 
 Deviation (documented): when ``K * y(wl - blk_p)`` would exceed 65535 (very low g, roughly
 g < 0.037 for a 12-bit range), that plane's K is lowered to ``floor(65535 / y_max)``; the
@@ -28,7 +30,17 @@ import numpy as np
 from .. import cfa, jxl
 from ..container import Chunk, make_chunk
 from . import EngineOutput, EngineParams
-from .half3 import apply_satm, frame_roles, resolve_threads, saturation_mask, satm_chunk
+from .half3 import (
+    minimal_head,
+    apply_fixup,
+    apply_satm,
+    fixup_options,
+    frame_roles,
+    resolve_threads,
+    run_fixup,
+    saturation_mask,
+    satm_chunk,
+)
 
 if TYPE_CHECKING:
     from ..rawio import RawFrame
@@ -113,18 +125,28 @@ class Gat4Engine:
         chunks: list[Chunk] = [make_chunk(fc, b) for fc, b in zip(FOURCCS, blobs)]
         if sat is not None:
             chunks.append(satm_chunk(sat))
+        block: dict[str, Any] = {
+            "d": d,
+            "K": k_fixed,
+            "planes": [{"g": g, "s2": s2, "K": kk} for (g, s2), kk in zip(gs2, ks)],
+            "satmask": sat is not None,
+        }
+        recon = None
+        fx_on, fx_k, fx_t = fixup_options(params.extra, d)
+        if fx_on:
+            recon, block["fixup"], fx = run_fixup(
+                m, white, blk, gs2, chunks, k=fx_k, t=fx_t,
+                reconstruct=lambda ch: _reconstruct(minimal_head(m.shape, white, blk), block, ch, nthreads),
+            )
+            if fx is not None:
+                chunks.append(fx)
         codec = {
             "effort": effort,
             "libjxl_version": jxl.libjxl_version(),
             "imagecodecs": jxl.imagecodecs_version(),
-            NAME: {
-                "d": d,
-                "K": k_fixed,
-                "planes": [{"g": g, "s2": s2, "K": kk} for (g, s2), kk in zip(gs2, ks)],
-                "satmask": sat is not None,
-            },
+            NAME: block,
         }
-        return EngineOutput(chunks=chunks, codec=codec, head_extra={"mode": "lossy"})
+        return EngineOutput(chunks=chunks, codec=codec, head_extra={"mode": "lossy"}, recon=recon)
 
     def decode(
         self,
@@ -134,44 +156,53 @@ class Gat4Engine:
         threads: int | None = None,
     ) -> np.ndarray:
         block = head["codec"][NAME]
-        H = int(head["mosaic"]["height"])
-        W = int(head["mosaic"]["width"])
-        if H % 2 or W % 2:
-            raise ValueError(f"gat4 HEAD mosaic size must be even, got {H}x{W}")
+        out = _reconstruct(head, block, chunks, threads)
         white = int(head["levels"]["white"])
-        blk = [int(v) for v in head["levels"]["black_per_position"]]
-        k_default = float(block.get("K", K_FIXED))
-        pl = block["planes"]
-        if len(pl) != 4:
-            raise ValueError("gat4 HEAD needs 4 plane parameter records")
-        for fc in FOURCCS:
-            if fc not in chunks:
-                raise ValueError(f"gat4 chunk {fc} missing")
-        nthreads = max(1, resolve_threads(threads) // 4)
-        hi = white - 1 if "SATM" in chunks else white
-        h2, w2 = H // 2, W // 2
-
-        def dec(k: int) -> np.ndarray:
-            a = jxl.decode(chunks[FOURCCS[k]], threads=nthreads)
-            if a.size != h2 * w2:
-                raise ValueError(f"{FOURCCS[k]} decoded to shape {a.shape}, expected {(h2, w2)}")
-            g, s2 = float(pl[k]["g"]), float(pl[k]["s2"])
-            kk = float(pl[k].get("K", k_default))
-            if a.dtype.kind == "f":
-                y = a.astype(np.float64).reshape(h2, w2) * (CODE_MAX / kk)
-            else:
-                y = a.astype(np.float64).reshape(h2, w2) / kk
-            x = gat_inv(y, g, s2)
-            x += blk[k]
-            np.rint(x, out=x)
-            np.clip(x, 0, hi, out=x)
-            return x.astype(np.uint16)
-
-        with ThreadPoolExecutor(max_workers=4) as ex:
-            planes = list(ex.map(dec, range(4)))
-        out = cfa.merge_planes(planes)
+        apply_fixup(out, chunks, required=int((block.get("fixup") or {}).get("n", 0)) > 0)
         apply_satm(out, chunks, white, required=bool(block.get("satmask", "SATM" in chunks)))
         return out
+
+
+def _reconstruct(
+    head: Mapping[str, Any], block: Mapping[str, Any], chunks: Mapping[str, bytes], threads: int | None
+) -> np.ndarray:
+    """Decode the four G4Pn planes into the clipped mosaic (no fix-up, no SATM)."""
+    H = int(head["mosaic"]["height"])
+    W = int(head["mosaic"]["width"])
+    if H % 2 or W % 2:
+        raise ValueError(f"gat4 HEAD mosaic size must be even, got {H}x{W}")
+    white = int(head["levels"]["white"])
+    blk = [int(v) for v in head["levels"]["black_per_position"]]
+    k_default = float(block.get("K", K_FIXED))
+    pl = block["planes"]
+    if len(pl) != 4:
+        raise ValueError("gat4 HEAD needs 4 plane parameter records")
+    for fc in FOURCCS:
+        if fc not in chunks:
+            raise ValueError(f"gat4 chunk {fc} missing")
+    nthreads = max(1, resolve_threads(threads) // 4)
+    hi = white - 1 if "SATM" in chunks else white
+    h2, w2 = H // 2, W // 2
+
+    def dec(k: int) -> np.ndarray:
+        a = jxl.decode(chunks[FOURCCS[k]], threads=nthreads)
+        if a.size != h2 * w2:
+            raise ValueError(f"{FOURCCS[k]} decoded to shape {a.shape}, expected {(h2, w2)}")
+        g, s2 = float(pl[k]["g"]), float(pl[k]["s2"])
+        kk = float(pl[k].get("K", k_default))
+        if a.dtype.kind == "f":
+            y = a.astype(np.float64).reshape(h2, w2) * (CODE_MAX / kk)
+        else:
+            y = a.astype(np.float64).reshape(h2, w2) / kk
+        x = gat_inv(y, g, s2)
+        x += blk[k]
+        np.rint(x, out=x)
+        np.clip(x, 0, hi, out=x)
+        return x.astype(np.uint16)
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        planes = list(ex.map(dec, range(4)))
+    return cfa.merge_planes(planes)
 
 
 ENGINE = Gat4Engine()

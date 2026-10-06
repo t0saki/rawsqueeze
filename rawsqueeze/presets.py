@@ -31,8 +31,11 @@ KNOWN_KEYS: frozenset[str] = frozenset(
      "snr_threshold", "use_matrix", "matrix", "satmask", "store_meta", "meta", "noise", "recon_hash",
      "threads", "keep_preview"}
 )
-EXTRA_KEYS: frozenset[str] = frozenset({"gat4_K"})
-"""Experimental engine options accepted into :attr:`EncodeParams.extra` (read by the engines)."""
+EXTRA_KEYS: frozenset[str] = frozenset({"gat4_K", "fixup", "fixup_k", "fixup_t"})
+"""Engine options accepted into :attr:`EncodeParams.extra` (read by the engines): the
+experimental ``gat4_K`` and the half3/gat4 max-error guard (``fixup`` on/off, ``fixup_k``
+sigma multiplier, ``fixup_t`` threshold as a fraction of ``white - black``; see
+``engines.half3.fixup_select``)."""
 
 
 @dataclass(frozen=True)
@@ -216,6 +219,14 @@ def resolve(opts: Mapping[str, Any] | None = None, **kw: Any) -> EncodeParams:
         raise ValueError(f"f must be >= 0, got {p.f}")
     if p.dD is not None and p.dD <= 0:
         raise ValueError(f"dD must be > 0, got {p.dD}")
+    if "fixup" in o:
+        o["fixup"] = bool(o["fixup"])
+    for key, lo_ok in (("fixup_k", True), ("fixup_t", False)):
+        if key in o:
+            v = _f(o[key], key)
+            if v is None or not (v > 0 or (lo_ok and v == 0)):
+                raise ValueError(f"{key} must be {'>= 0' if lo_ok else '> 0'}, got {o[key]!r}")
+            o[key] = v
     p.extra = o
     return p
 

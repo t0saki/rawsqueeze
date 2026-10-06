@@ -291,6 +291,190 @@ def test_xmp_extra_escaped() -> None:
 
 
 # ---------------------------------------------------------------------------------------
+# CFA / BlackLevel phase for odd ActiveArea origins
+
+
+@pytest.mark.parametrize("margins", [(0, 0), (1, 0), (0, 1), (1, 1), (2, 2)])
+@pytest.mark.parametrize("comp", ["lj92", "none16"])
+def test_cfa_phase_odd_margins(margins: tuple[int, int], comp: str, synthetic_frame_factory) -> None:  # type: ignore[no-untyped-def]
+    """CFAPattern/BlackLevel are relative to the ActiveArea origin: LibRaw must find R where it is."""
+    top, left = margins
+    fr = synthetic_frame_factory(h=64, w=64)  # pattern RGGB at mosaic (0,0): [[0,1],[3,2]]
+    head = copy.deepcopy(fr.head_sections())
+    head["geometry"].update(margins=[top, left], visible_hw=[60 - top, 60 - left], crop_ltwh=[left, top, 60 - left, 60 - top])
+    blk = [100, 110, 120, 130]
+    head["levels"]["black_per_position"] = blk
+    buf = dng.dng_encode(fr.mosaic, head, compression=comp)
+    t = _tags(buf)
+    assert t[50829] == [top, left, 60, 60]
+    exp_cfa = [fr.dng_cfa()[2 * ((i + top) % 2) + (j + left) % 2] for i in (0, 1) for j in (0, 1)]
+    assert t[33422] == exp_cfa
+    assert t[50714] == [blk[2 * ((i + top) % 2) + (j + left) % 2] for i in (0, 1) for j in (0, 1)]
+    with rawpy.imread(io.BytesIO(buf)) as r:
+        colors = r.raw_colors.copy()
+        desc = r.color_desc.decode()
+        assert np.array_equal(r.raw_image, fr.mosaic)
+    yy, xx = np.mgrid[0:64, 0:64]
+    expected = np.asarray(fr.pattern)[yy % 2, xx % 2]  # colour index relative to mosaic (0,0)
+    vis = (yy >= top) & (yy < 60) & (xx >= left) & (xx < 60)
+    assert np.array_equal(colors[vis], expected[vis])
+    assert desc[colors[0 + 2, 0 + 2]] == "R"  # the R pixel of the 2x2 cell at (2,2)
+
+
+def test_cfa_phase_odd_margins_uniform_black(synthetic_frame_factory) -> None:  # type: ignore[no-untyped-def]
+    """With a uniform black level LibRaw reads it unchanged for any origin."""
+    fr = synthetic_frame_factory(h=64, w=64)
+    for top, left in ((1, 0), (0, 1), (1, 1)):
+        head = copy.deepcopy(fr.head_sections())
+        head["geometry"].update(margins=[top, left], visible_hw=[60 - top, 60 - left], crop_ltwh=[left, top, 60 - left, 60 - top])
+        with rawpy.imread(io.BytesIO(dng.dng_bytes16(fr.mosaic, head))) as r:
+            assert list(r.black_level_per_channel) == fr.black_per_channel
+            assert r.raw_pattern.tolist() == fr.pattern.tolist()
+
+
+def test_rotate_cfa_phase() -> None:
+    v = [0, 1, 2, 3]
+    assert dng.rotate_cfa_phase(v, 0, 0) == v
+    assert dng.rotate_cfa_phase(v, 1, 0) == [2, 3, 0, 1]
+    assert dng.rotate_cfa_phase(v, 0, 1) == [1, 0, 3, 2]
+    assert dng.rotate_cfa_phase(v, 1, 1) == [3, 2, 1, 0]
+    assert dng.rotate_cfa_phase(v, 2, 4) == v
+
+
+# ---------------------------------------------------------------------------------------
+# lens distortion: opcode lists, WarpRectilinear, Panasonic DistortionInfo
+
+# DistortionInfo (0x0119) of two DC-S9 samples: P1060444 (60 mm, pincushion) and
+# ISO2000_PANA9996 (24 mm, barrel).
+PANA_60MM = bytes.fromhex("cc12496b410069000400c2fb050001e103fc11005a010c00160e05025a48c311")
+PANA_24MM = bytes.fromhex("eb14619004016f02dcfae3ffd70001f1860f80005a0192fe160e7402cdfb6eca")
+
+
+def test_opcode_list_binary_layout_roundtrip() -> None:
+    op = dng.WarpRectilinear(planes=[(0.99, 0.01, -0.002, 0.0003, 1e-5, -2e-5)], cx=0.4999, cy=0.5001)
+    b = dng.opcode_list_bytes([op])
+    assert len(b) == 4 + 16 + 4 + 48 + 16 == 88
+    n, oid, ver, flags, size, planes = struct.unpack_from(">6I", b, 0)
+    assert (n, oid, ver, flags, size, planes) == (1, 1, 0x01030000, dng.OPCODE_FLAG_OPTIONAL, 68, 1)
+    assert struct.unpack_from(">6d", b, 24) == op.planes[0]
+    assert struct.unpack_from(">2d", b, 72) == (0.4999, 0.5001)
+    (back,) = dng.parse_opcode_list(b)
+    assert back == op
+    # 3 planes + an unknown opcode kept verbatim
+    op3 = dng.WarpRectilinear(planes=[(1.0, 0.1, 0.0, 0.0, 0.0, 0.0), (1.0, 0.2, 0.0, 0.0, 0.0, 0.0),
+                                      (1.0, 0.3, 0.0, 0.0, 0.0, 0.0)], flags=0)
+    raw = dng.RawOpcode(opcode_id=9, version=0x01030000, flags=1, params=b"\x00\x01\x02\x03")
+    b3 = dng.opcode_list_bytes([op3, raw])
+    assert len(b3) == 4 + (16 + 4 + 3 * 48 + 16) + (16 + 4)
+    assert dng.parse_opcode_list(b3) == [op3, raw]
+    for bad in (b[:3], b[:-1], b + b"\x00", b"\x00\x00\x00\x01" + b[4:20] + b[24:]):
+        with pytest.raises(ValueError):
+            dng.parse_opcode_list(bad)
+
+
+def test_warp_rectilinear_src_matches_dng_sdk_formula() -> None:
+    W, H = 600, 400
+    op = dng.WarpRectilinear(planes=[(0.97, 0.03, -0.01, 0.002, 0.001, -0.002)], cx=0.45, cy=0.55)
+    cx, cy, nr = dng.warp_rectilinear_norm(op, W, H)
+    assert (cx, cy) == (pytest.approx(270.0), pytest.approx(220.0))
+    assert nr == pytest.approx(np.hypot(600 - 270, 0 - 220))  # farthest corner (r, t), r exclusive
+    rng = np.random.default_rng(1)
+    x, y = rng.uniform(0, W, 50), rng.uniform(0, H, 50)
+    sx, sy = dng.warp_rectilinear_src(x, y, op, W, H)
+    k0, k1, k2, k3, t0, t1 = op.planes[0]
+    for i in range(50):
+        dx, dy = (x[i] - cx) / nr, (y[i] - cy) / nr
+        r2 = min(dx * dx + dy * dy, 1.0)
+        f = k0 + k1 * r2 + k2 * r2**2 + k3 * r2**3
+        ex = cx + nr * (dx * f + t1 * (r2 + 2 * dx * dx) + 2 * t0 * dx * dy)
+        ey = cy + nr * (dy * f + t0 * (r2 + 2 * dy * dy) + 2 * t1 * dx * dy)
+        assert (sx[i], sy[i]) == (pytest.approx(ex), pytest.approx(ey))
+    c = dng.warp_rectilinear_src(np.array([cx]), np.array([cy]), op, W, H)
+    assert (c[0][0], c[1][0]) == (pytest.approx(cx), pytest.approx(cy))
+
+
+def test_parse_panasonic_distortion() -> None:
+    d = meta.parse_panasonic_distortion(PANA_60MM)
+    assert d is not None and d.checksum_ok and d.enabled
+    assert d.scale == pytest.approx(1.03427813900638)  # exiftool DistortionScale
+    assert d.coeffs == (-0.031158447265625, 0.0001220703125, 0.0003662109375)  # Param08, 04, 11
+    assert d.norm_radius == 3606
+    assert meta.parse_panasonic_distortion(PANA_60MM[:31]) is None
+    assert meta.parse_panasonic_distortion(None) is None
+    bad = bytearray(PANA_60MM)
+    bad[8] ^= 1
+    assert meta.parse_panasonic_distortion(bytes(bad)).checksum_ok is False  # type: ignore[union-attr]
+    off = bytearray(PANA_60MM)
+    off[14] &= 0xF0  # DistortionCorrection = Off (word 7 low nibble)
+    od = meta.parse_panasonic_distortion(bytes(off))
+    assert od is not None and not od.enabled
+    assert dng.panasonic_warp_rectilinear(od, active_hw=(4016, 6016), crop=(8, 8, 6000, 4000)) is None
+
+
+@pytest.mark.parametrize("blob", [PANA_60MM, PANA_24MM], ids=["60mm", "24mm"])
+def test_panasonic_to_warp_rectilinear_inverts_model(blob: bytes) -> None:
+    d = meta.parse_panasonic_distortion(blob)
+    assert d is not None
+    W, H = 6016, 4016
+    op, err = dng.panasonic_warp_rectilinear(d, active_hw=(H, W), crop=(8, 8, 6000, 4000))  # type: ignore[misc]
+    assert err < 0.5
+    ccx, ccy = 8 + 5999 / 2, 8 + 3999 / 2
+    assert (op.cx * W, op.cy * H) == (pytest.approx(ccx), pytest.approx(ccy))
+    # output pixel p samples source s: the Panasonic forward model must map |s| back to |p|
+    rng = np.random.default_rng(0)
+    x, y = rng.uniform(8, 6008, 2000), rng.uniform(8, 4008, 2000)
+    sx, sy = dng.warp_rectilinear_src(x, y, op, W, H)
+    n = d.norm_radius
+    r_out = np.hypot(x - ccx, y - ccy)
+    r_back = d.forward(np.hypot(sx - ccx, sy - ccy) / n) * n
+    assert np.max(np.abs(r_back - r_out)) < 0.6
+    # radial only: directions preserved
+    assert np.allclose(np.arctan2(sy - ccy, sx - ccx), np.arctan2(y - ccy, x - ccx), atol=1e-9)
+
+
+def _dng_with_fake_meta(monkeypatch, tmp_path: Path, frame, name: str, **kw):  # type: ignore[no-untyped-def]
+    monkeypatch.setattr(meta, "panasonic_distortion_info", lambda payload: PANA_24MM)
+    out = tmp_path / name
+    rep = dng.write_dng(frame.mosaic, frame.head_sections(), out, meta=b"fake", exif=False, **kw)
+    return out, rep
+
+
+def test_write_dng_lens_opcode_flag(monkeypatch, tmp_path: Path, frame_iso100) -> None:  # type: ignore[no-untyped-def]
+    import base64
+
+    monkeypatch.delenv("RAWSQUEEZE_DNG_LENS_OPCODE", raising=False)
+    on, rep_on = _dng_with_fake_meta(monkeypatch, tmp_path, frame_iso100, "on.dng")
+    off, rep_off = _dng_with_fake_meta(monkeypatch, tmp_path, frame_iso100, "off.dng", lens_opcode=False)
+    monkeypatch.setenv("RAWSQUEEZE_DNG_LENS_OPCODE", "0")
+    env_off, rep_env = _dng_with_fake_meta(monkeypatch, tmp_path, frame_iso100, "env.dng")
+    forced, rep_forced = _dng_with_fake_meta(monkeypatch, tmp_path, frame_iso100, "forced.dng", lens_opcode=True)
+    assert dng.LENS_OPCODE_DEFAULT is True
+    for path, rep, has in ((on, rep_on, True), (off, rep_off, False), (env_off, rep_env, False), (forced, rep_forced, True)):
+        buf = path.read_bytes()
+        t = _tags(buf)
+        assert (51022 in t) is has, path.name
+        assert rep.lens is not None and rep.lens["opcode"] is has
+        assert any("not written as a DNG WarpRectilinear" in w for w in rep.warnings) is (not has)
+        # XMP keeps the raw parameters either way
+        xmp = bytes(t[700])
+        assert b'rawsqueeze:PanasonicDistortionInfo="' + base64.b64encode(PANA_24MM) + b'"' in xmp
+        with rawpy.imread(str(path)) as r:
+            assert np.array_equal(r.raw_image, frame_iso100.mosaic)
+            assert r.postprocess(half_size=True, user_flip=0).shape[:2] == (frame_iso100.height // 2, frame_iso100.width // 2)
+        if has:
+            (op,) = dng.parse_opcode_list(bytes(t[51022]))
+            assert isinstance(op, dng.WarpRectilinear) and len(op.planes) == 1
+            assert op.planes[0][0] == pytest.approx(rep.lens["k"][0])
+    assert rep_off.lens["reason"] == "disabled"
+
+
+def test_write_dng_no_distortion_no_opcode(tmp_path: Path, frame_iso100) -> None:  # type: ignore[no-untyped-def]
+    rep = dng.write_dng(frame_iso100.mosaic, frame_iso100.head_sections(), tmp_path / "x.dng")
+    assert rep.lens is None
+    assert 51022 not in _tags((tmp_path / "x.dng").read_bytes())
+
+
+# ---------------------------------------------------------------------------------------
 # slow: real samples
 
 
@@ -327,7 +511,19 @@ def test_real_sample_lj92_with_exif(name: str, sample_path, tmp_path: Path) -> N
         assert g1["IFD0:OriginalRawFileName"] == name
         dist = meta.panasonic_distortion_info(payload)
         assert dist and g1["XMP-rawsqueeze:PanasonicDistortionInfo"] == __import__("base64").b64encode(dist).decode()
-        assert any("WarpRectilinear" in w for w in rep.warnings)
+        # lens distortion -> OpcodeList3 WarpRectilinear (survives the exiftool transfer)
+        assert rep.lens and rep.lens["opcode"] is True and rep.lens["fit_err_px"] < dng.LENS_FIT_MAX_ERR_PX
+        assert not any("WarpRectilinear" in w for w in rep.warnings)
+        assert et.run_json(["-OpcodeList3", str(out)])[0]["OpcodeList3"] == "WarpRectilinear"
+        buf = out.read_bytes()
+        e = meta.parse_tiff(buf).ifds[0].entries[51022]
+        (op,) = dng.parse_opcode_list(buf[e.data_offset : e.data_offset + e.count])
+        pd = meta.parse_panasonic_distortion(dist)
+        assert pd is not None and pd.checksum_ok and pd.enabled
+        exp, _ = dng.panasonic_warp_rectilinear(pd, active_hw=(fr.height, fr.width),
+                                                crop=(fr.crop_ltwh[0] - fr.margins[1], fr.crop_ltwh[1] - fr.margins[0],
+                                                      fr.crop_ltwh[2], fr.crop_ltwh[3]))
+        assert op.planes == exp.planes and (op.cx, op.cy) == (exp.cx, exp.cy)
         assert not any("copied no EXIF" in w for w in rep.warnings)
     with rawpy.imread(str(out)) as r:
         assert np.array_equal(r.raw_image, fr.mosaic)

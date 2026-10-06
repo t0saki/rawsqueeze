@@ -12,7 +12,8 @@ max, ``3-norm:`` line = p3), PSNR on 16-bit, ss2 on a 2x2 (linear-light) downsam
 Tiles: centre, darkest, highest local variance, seeded random (2048^2); worst tile per EV.
 Plus a FLOOR control (original + random 0/1 DN), raw-domain RMSE/sigma, +3EV bias and
 high-pass noise-std ratio, and highlight clipping consistency.  :data:`ACCEPTANCE` holds
-the per-preset criteria of DESIGN.md 6.4.
+the per-engine criteria of DESIGN.md 6.4 as data, recalibrated as functions of the quality
+parameter (:func:`acceptance_criteria`, :func:`nlq_criteria`, :func:`half3_criteria`).
 """
 
 from __future__ import annotations
@@ -530,35 +531,155 @@ def clip_consistency(orig: np.ndarray, rec: np.ndarray, white: int) -> dict[str,
 
 
 # ---------------------------------------------------------------------------------------
-# acceptance (DESIGN.md 6.4)
+# acceptance (DESIGN.md 6.4, recalibrated 2026-10 on 13 DC-S9 samples, ISO 100-51200)
+#
+# The criteria are functions of the engine's quality parameter (nlq: f, half3: d), so a
+# file encoded with e.g. ``--preset vl --f 1.5`` is judged by f = 1.5.  The preset only
+# supplies the parameter when the HEAD has none.  Every value is the worst of 4 x 2048^2
+# tiles (centre, darkest, highest variance, random), AHD via DNG, as in DESIGN.md 6.1.
+#
+# nlq (noise-relative; theory for a uniform quantiser of step f*sigma):
+#   raw RMSE/sigma  = f/sqrt(12)              -> limit 1.2*f/sqrt(12) + 0.03
+#   noise std ratio = sqrt(1 + f^2/12)        -> limit sqrt(1 + (1.2*f)^2/12) + 0.03
+#   |bias8| (+3EV, 8-bit sRGB levels, centre/darkest tile) -> limit 0.75 + 0.25*f^2
+#   f <= 0.5 only, low ISO only: ss2 >= FLOOR - 3 at every EV.
+#   (x1.2 / +0.03: estimator slack.  Measured at f = 1 on 13 files: RMSE/sigma 0.285-0.328
+#   (integer rounding adds ~0.03 at ISO 100, where sigma is 1-4 DN), noise ratio 1.009-1.066
+#   (flat-block estimator reads ~+0.025 above theory), |bias8| 0.009-0.647 (integer
+#   centroid LUT: raw mean error up to -0.28 DN on the PANA0003 night sky; a Gaussian
+#   control of the same error variance gives 0.14).  Limits at f = 0.5 / 1 / 2:
+#   RMSE/sigma 0.203 / 0.376 / 0.723, noise ratio 1.045 / 1.088 / 1.247, |bias8| 0.81 /
+#   1.00 / 1.75.  A visible nlq defect (wrong noise model, LUT off by >= 1 DN) moves these
+#   by far more than the slack.)
+#
+# half3 (perceptual; anchors at d = 0.1 / 0.2 / 0.3 = presets high / vl / compact, linear in
+# d in between and extrapolated with the outer slopes, d clamped to [0.05, 0.6]).  Measured
+# populations (worst of 4 tiles, H3FX guard on):
+#
+#   d    | visually lossless at 4x / +3EV: P1060444,    | degraded: forced half3 at ISO >= 640 | limit
+#        | PANA9831, P1060384 (ISO 100-320), worst value | (soft / flattened grain), best value |
+#   -----+-----------------------------------------------+--------------------------------------+------
+#   0.1  | ss2 0/+2/+3 88.1 / 85.0 / 81.8, p3 0.90, max 4.0 | ISO800 88.6 / 81.1 / 76.2, p3 1.06 | 84 / 82 / 78, p3 1.2, max 6
+#   0.2  | ss2 84.3 / 79.6 / 76.8, p3 1.23, max 4.8      | ISO800 85.3 / 74.9 / 68.3, p3 1.37   | 80 / 77 / 72, p3 1.5, max 8
+#   0.3  | ss2 81.2 / 75.4 / 71.7, p3 1.52, max 6.2      | ISO800 82.8 / 70.3 / 62.4, p3 1.57   | 78 / 73 / 67, p3 1.8, max 9
+#
+#   (At d 0.1 the ISO800 file is about as good as nlq vl -- below the bar of preset high.)
+#   +3EV ss2 is the main separator (margins at d 0.2: +4.8 good / -3.7 bad), +2EV ss2 the
+#   second (+2.6 / -2.1); 0EV ss2 does not separate (sanity floor only).  ba p3 is set to
+#   catch gross failures (ISO640 before the gamut guard 7.56, ISO3200-4000 1.7-5.1) with
+#   ~20 % headroom over the good files; the soft-grain population (ba p3 1.37-1.6) is
+#   separated by ss2.  ba max catches localised artefacts (good <= 6.2, gamut clamp 22).
+#   The noise std ratio is not used for half3: it reads 0.58-0.71 on P1060384 (ISO 320,
+#   clean sky, invisible) but 0.83-0.97 on the degraded high-ISO files.  At vl every forced
+#   half3 file at ISO >= 640 fails (ISO640 66.7, ISO800 68.3, ISO1250 57.0, ISO1600 65.9,
+#   P1037920 30.6, ISO51200 39.2 +3EV ss2).
+
+NLQ_SLACK_MUL = 1.2
+NLQ_SLACK_ADD = 0.03
+NLQ_FLOOR_MARGIN_MAX_F = 0.5
+"""``ss2 >= FLOOR - 3`` is only meaningful for near-transparent steps (preset high)."""
+
+HALF3_ANCHORS: dict[float, dict[str, float]] = {
+    # d: criteria (ss2_min@EV, ba_p3_max@+3EV, ba_max_max@+3EV)
+    0.1: {"ss2@0": 84.0, "ss2@2": 82.0, "ss2@3": 78.0, "ba_p3@3": 1.2, "ba_max@3": 6.0},
+    0.2: {"ss2@0": 80.0, "ss2@2": 77.0, "ss2@3": 72.0, "ba_p3@3": 1.5, "ba_max@3": 8.0},
+    0.3: {"ss2@0": 78.0, "ss2@2": 73.0, "ss2@3": 67.0, "ba_p3@3": 1.8, "ba_max@3": 9.0},
+}
+"""half3 limits at the calibration points (see the table above)."""
+HALF3_D_RANGE = (0.05, 0.6)
+
+
+def nlq_criteria(f: float) -> dict[str, Any]:
+    """Noise-relative nlq criteria for step ``f`` (in units of sigma); see the comment table."""
+    f = float(f)
+    fe = NLQ_SLACK_MUL * f
+    c: dict[str, Any] = {
+        "noise_ratio_max": round(math.sqrt(1.0 + fe * fe / 12.0) + NLQ_SLACK_ADD, 4),
+        "bias8_abs_max": round(0.75 + 0.25 * f * f, 4),
+        "rmse_sigma_max": round(fe / math.sqrt(12.0) + NLQ_SLACK_ADD, 4),
+    }
+    if f <= NLQ_FLOOR_MARGIN_MAX_F:
+        c["ss2_floor_margin"] = 3.0
+    return c
+
+
+def _interp_anchor(d: float, key: str) -> float:
+    """Piecewise-linear in d through :data:`HALF3_ANCHORS`, outer segments extended."""
+    ds = sorted(HALF3_ANCHORS)
+    d = min(max(float(d), HALF3_D_RANGE[0]), HALF3_D_RANGE[1])
+    i = int(np.clip(np.searchsorted(ds, d) - 1, 0, len(ds) - 2))
+    lo, hi = ds[i], ds[i + 1]
+    a, b = HALF3_ANCHORS[lo][key], HALF3_ANCHORS[hi][key]
+    return a + (b - a) * (d - lo) / (hi - lo)
+
+
+def half3_criteria(d: float) -> dict[str, Any]:
+    """Perceptual half3 criteria for JXL distance ``d`` (interpolated from :data:`HALF3_ANCHORS`)."""
+    v = {k: round(_interp_anchor(d, k), 3) for k in HALF3_ANCHORS[0.2]}
+    return {
+        "ss2_min": {0.0: v["ss2@0"], 2.0: v["ss2@2"], 3.0: v["ss2@3"]},
+        "ba_p3_max": {3.0: v["ba_p3@3"]},
+        "ba_max_max": {3.0: v["ba_max@3"]},
+        "clip_inconsistent_max": 0,
+    }
+
+
+PRESET_PARAMS: dict[str, dict[str, float]] = {
+    "high": {"d": 0.1, "f": 0.5},
+    "vl": {"d": 0.2, "f": 1.0},
+    "compact": {"d": 0.3, "f": 2.0},
+}
+"""Nominal (d, f) of the lossy presets (presets.PRESETS), used when HEAD has no parameter."""
 
 ACCEPTANCE: dict[tuple[str, str], dict[str, Any]] = {
     ("lossless", "*"): {"mosaic_equal": True},
     ("archival", "*"): {"mosaic_equal": True},
-    ("high", "half3"): {"ss2_min": {3.0: 85.0}, "ba_p3_max": {3.0: 0.8}},
-    ("high", "nlq"): {"noise_ratio_max": 1.02, "bias8_abs_max": 0.3, "ss2_floor_margin": 3.0},
-    ("vl", "half3"): {"ss2_min": {0.0: 84.0, 3.0: 79.0}, "ba_p3_max": {3.0: 1.0}, "clip_inconsistent_max": 0},
-    ("vl", "nlq"): {"noise_ratio_max": 1.05, "bias8_abs_max": 0.5, "rmse_sigma_max": 0.32},
-    ("compact", "half3"): {"ss2_min": {3.0: 76.0}, "ba_p3_max": {3.0: 1.3}},
-    ("compact", "nlq"): {"noise_ratio_max": 1.18, "bias8_abs_max": 0.5},
+    **{(p, "half3"): half3_criteria(v["d"]) for p, v in PRESET_PARAMS.items()},
+    **{(p, "nlq"): nlq_criteria(v["f"]) for p, v in PRESET_PARAMS.items()},
 }
-"""(preset, engine) -> criteria.  Keys: ``mosaic_equal``; ``ss2_min`` / ``ba_p3_max``
-({ev: threshold}, worst tile); ``clip_inconsistent_max``; ``noise_ratio_max``,
-``bias8_abs_max`` (+3EV, worst of centre/darkest tile); ``rmse_sigma_max`` (raw domain, worst
-position); ``ss2_floor_margin`` (ss2 >= FLOOR - margin at every EV; applied at low ISO only,
-i.e. ``noise.snr18 >= 40`` or ISO <= 800)."""
+"""(preset, engine) -> criteria at the preset's nominal parameter (reference table; the
+check itself uses :func:`acceptance_criteria` with the file's actual d / f).  Keys:
+``mosaic_equal``; ``ss2_min`` / ``ba_p3_max`` / ``ba_max_max`` ({ev: threshold}, worst
+tile); ``clip_inconsistent_max``; ``noise_ratio_max``, ``bias8_abs_max`` (+3EV, worst of
+centre/darkest tile); ``rmse_sigma_max`` (raw domain, worst position); ``ss2_floor_margin``
+(ss2 >= FLOOR - margin at every EV; applied at low ISO only, i.e. ``noise.snr18 >= 40`` or
+ISO <= 800)."""
 
 LOW_ISO_SNR18 = 40.0
 LOW_ISO_MAX = 800
 
 
-def acceptance_criteria(preset: str | None, engine: str | None, mode: str | None = None) -> dict[str, Any] | None:
-    """Criteria for (preset, engine); ``mode == 'lossless'`` or engine 'lossless' -> lossless."""
-    if mode == "lossless" or engine == "lossless" or preset in ("lossless", "archival"):
-        return ACCEPTANCE[("lossless", "*")]
-    if preset is None or engine is None:
+def codec_param(engine: str | None, codec: Mapping[str, Any] | None) -> float | None:
+    """The quality parameter recorded in HEAD ``codec`` (nlq: f, half3/gat4: d), or None."""
+    if not engine or not isinstance(codec, Mapping):
         return None
-    return ACCEPTANCE.get((preset, engine))
+    blk = codec.get(engine)
+    if not isinstance(blk, Mapping):
+        return None
+    v = blk.get("f" if engine == "nlq" else "d")
+    return float(v) if isinstance(v, (int, float)) and math.isfinite(float(v)) else None
+
+
+def acceptance_criteria(
+    preset: str | None, engine: str | None, mode: str | None = None, param: float | None = None
+) -> dict[str, Any] | None:
+    """Criteria for ``engine`` at quality ``param`` (nlq f / half3 d; default: the preset's).
+
+    ``mode == 'lossless'``, engine 'lossless' or preset lossless/archival -> bit-exactness.
+    Returns None when nothing applies (gat4, unknown preset without a parameter).
+    """
+    if mode == "lossless" or engine == "lossless" or preset in ("lossless", "archival"):
+        return dict(ACCEPTANCE[("lossless", "*")])
+    if engine == "nlq" and param is not None and param == 0:
+        return dict(ACCEPTANCE[("lossless", "*")])
+    if engine not in ("nlq", "half3"):
+        return None
+    if param is None:
+        nominal = PRESET_PARAMS.get(preset or "")
+        if nominal is None:
+            return None
+        param = nominal["f" if engine == "nlq" else "d"]
+    return nlq_criteria(param) if engine == "nlq" else half3_criteria(param)
 
 
 # ---------------------------------------------------------------------------------------
@@ -670,7 +791,8 @@ def check_acceptance(report: VerifyReport, criteria: Mapping[str, Any] | None = 
     centre/darkest tile, ...) is a *failure*: the result is inconclusive and must not pass.
     """
     if criteria is None:
-        criteria = acceptance_criteria(report.preset, report.engine, report.mode)
+        criteria = acceptance_criteria(report.preset, report.engine, report.mode,
+                                       codec_param(report.engine, report.params.get("codec")))
     if criteria is None:
         return {"criteria": None, "passed": True, "failures": [], "skipped": ["no criteria for preset/engine"]}
     fails: list[str] = []
@@ -683,6 +805,7 @@ def check_acceptance(report: VerifyReport, criteria: Mapping[str, Any] | None = 
     for key, metric, attr, label in (
         ("ss2_min", "ssimulacra2", "ss2", "ss2"),
         ("ba_p3_max", "butteraugli", "ba_p3", "ba_p3"),
+        ("ba_max_max", "butteraugli", "ba_max", "ba_max"),
     ):
         for ev, thr in (criteria.get(key) or {}).items():
             ev = float(ev)
@@ -696,7 +819,7 @@ def check_acceptance(report: VerifyReport, criteria: Mapping[str, Any] | None = 
                 fails.append(f"{label}@{ev:+g}EV not measured{why}")
             elif key == "ss2_min" and v < thr:
                 fails.append(f"{label}@{ev:+g}EV {v:.2f} < {thr}")
-            elif key == "ba_p3_max" and v > thr:
+            elif key in ("ba_p3_max", "ba_max_max") and v > thr:
                 fails.append(f"{label}@{ev:+g}EV {v:.3f} > {thr}")
     if "clip_inconsistent_max" in criteria and report.clip.get("inconsistent", 0) > criteria["clip_inconsistent_max"]:
         fails.append(f"clip inconsistent pixels {report.clip['inconsistent']}")
@@ -926,6 +1049,9 @@ __all__ = [
     "TileRect",
     "VerifyReport",
     "acceptance_criteria",
+    "codec_param",
+    "half3_criteria",
+    "nlq_criteria",
     "bias8",
     "butteraugli",
     "check_acceptance",

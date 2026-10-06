@@ -199,15 +199,23 @@ effort 非单调的原因（B）：e3 用的是围绕自校正加权预测器（
 7. `D = (G1 − G2) + 0.5`（float32），`b_D = jpegxl_encode(D, distance=dD, effort=5)`，默认 `dD = d`（A：两路的边际率失真相等）。D 占码流的 26–30%，不能丢。
 8. `b_sat = zstd19(np.packbits(S.ravel()))`（78 B 到 8 KB）。**不要**用 JXL lossless 存掩码：即使掩码几乎为空也有约 5 KB 开销。
 9. rgb 和 D 两路编码在两个线程里并行，numthreads 按比例 3:1 分配。
+10. **最大误差保护（H3FX，2026-10 新增，默认开）**：编码后在进程内把 H3RG/H3DG 解码一次（与解码器同一个 `_reconstruct`），对未饱和像素，凡 `|err| > max(t·(wl − blk_p), k·σ_p(x))` 的像素把原值 `min(m_orig, wl)` 精确存进稀疏 chunk `H3FX`。
+    - 默认 `k = 8`、`t = 0.2·d`（d0.1/0.2/0.3 → t 0.02/0.04/0.06 = 79/158/237 DN，12-bit）。σ 取自噪声模型 `σ² = g·(x − blk) + s2`；没有噪声模型时只用绝对阈值。
+    - 修补像素上限为全部像素的 0.2%（至少 1024 个），超出时保留 `|err|/阈值` 最大的那些。
+    - 它主要抓 D 平面被 libjxl 钳位（D < 约 −0.0038，即 `G1 − G2 < −0.504`，单向误差可达数百 DN）以及部分饱和 quad 的离群点。DC-S9 vl 实测：修补 38–5101 像素，占文件 0.015–0.29%，max |err| 308–799 → 158 DN，编码多约 0.2–0.35 s；4 tile 的 ss2/ba p3 基本不变（它消除局部离群点，不提高整体画质）。
+    - 进程内解码顺便得到精确重建：开启保护时总会写 `recon_sha256`，`--verify` 不再额外解码。
+    - 开关：API `fixup` / `fixup_k` / `fixup_t`（`EncodeParams.extra`），CLI `--no-fixup` / `--fixup-k` / `--fixup-t`。gat4 使用同一个保护（很少触发）。
+    - HEAD 记录 `codec.half3.fixup = {k, t, t_dn, noise, n, n_over, capped, err_max_before, err_max_after}`。
 
 **解码**
 1. `cam = jpegxl_decode(b_rgb).astype(float64) @ Minv.T`；`D = jpegxl_decode(b_D).astype(float64) − 0.5`。解码后要确认 dtype 是 float32；若库返回整数，按位深归一化（实现时用断言检查）。
 2. `R = cam0/wbR`，`B = cam2/wbB`，`G1 = cam1 + D/2`，`G2 = cam1 − D/2`。
 3. 反归一化：`v = clip(rint(n·(wl − blk_p) + blk_p), blk_p, wl)`，转 uint16，交织回马赛克。
-4. `m̂[S] = wl`（掩码精确恢复裁切）。
-5. 确定性：不同 libjxl 版本或平台的浮点解码可能有微小差异。HEAD 里的 `recon_sha256` 只作提示，`codec.libjxl_version` 必须记录。
+4. 若有 `H3FX`：把其中的原值写回对应像素（顺序：clip → H3FX → SATM）。没有 H3FX 的旧文件照常解码；HEAD 记录 `fixup.n > 0` 而 chunk 缺失时报错。H3FX 存的是原值而不是残差，所以浮点解码的平台差异不影响修补结果。
+5. `m̂[S] = wl`（掩码精确恢复裁切）。
+6. 确定性：不同 libjxl 版本或平台的浮点解码可能有微小差异。HEAD 里的 `recon_sha256` 只作提示，`codec.libjxl_version` 必须记录。
 
-**已知局限**：部分饱和的 2×2 quad 边缘误差最高约 900 DN（A-E8，像素占比 0.01–0.1%，集中在饱和点 6 px 以内）。离开高光区域后最大约 510–550 DN，p99.99 为 95 DN。
+**已知局限**：部分饱和的 2×2 quad 边缘误差最高约 900 DN（A-E8，像素占比 0.01–0.1%，集中在饱和点 6 px 以内）。离开高光区域后最大约 510–550 DN，p99.99 为 95 DN（整幅实测为 199 DN，见 STATUS 偏差 4）。开启 H3FX 后（默认）低 ISO 文件的 max |err| 被限制在 `max(t·(wl−blk), 8σ)`，d0.2 时为 158 DN；强制 half3 的高 ISO 文件上限随噪声增大（8σ 大）。
 
 ### 2.6 引擎 gat4（B，实验性，P2 优先级）
 - 对每个平面：`y = (2/g)·sqrt(max(g·x + 3/8·g² + s2, 0))`（单位方差域），`a = rint(y·K)`，uint16，**固定 K = 100**（每个 σ 100 个码值，使 d 的含义与 ISO 无关；B 测试时用的是 `K = 65535/ymax`）。然后 `jpegxl_encode(a, distance=d, effort=5)`。
@@ -263,6 +271,7 @@ EOF-4  4    b"RSQE"       (尾标；缺失 = 截断)
 | `H3RG` | Y | N | half3 rgb 的 JXL VarDCT codestream | half3 |
 | `H3DG` | Y | N | half3 D 平面的 JXL codestream | half3 |
 | `SATM` | Y | Y | `np.packbits(S.ravel(), bitorder='big')`，按行优先，H×W bit（ZSTD 标志位表示 zstd-19） | half3、gat4 |
+| `H3FX` | Y | Y | 最大误差修补（2.5 节第 10 步）：头 `<BBHIII>`（version=1、flags=0、reserved=0、n、H、W），然后 n 个排序后行优先像素索引的 LEB128 差分（第一个差分 = 第一个索引），最后 n 个原始 uint16 值，先低字节段、后高字节段 | half3、gat4，且有像素需要修补时（默认开，`--no-fixup` 关） |
 | `G4P0`..`G4P3` | Y | N | gat4 平面的 JXL codestream | gat4 |
 | `META` | N | Y | 元数据骨架（第 3.4 节），zstd-19 | 默认（`--no-meta` 时省略） |
 | `PRV0`/`PRV1` | N | N | 相机 JPEG 的 JXL lossless-JPEG 转码（PRV0=JpgFromRaw，PRV1=JpgFromRaw2） | `--keep-preview small/full` |
@@ -278,7 +287,8 @@ EOF-4  4    b"RSQE"       (尾标；缺失 = 截断)
  "codec": {"libjxl_version": "0.12.0", "imagecodecs": "2026.8.x",
            "layout": "planes|stack4", "effort": 3,
            "nlq": {"f": 1.0, "recon": "mid|centroid", "planes": [{"g":0.062,"s2":4.1,"offset":0,"q_sat":431,"dtype":"uint16"}, "..."]},
-           "half3": {"d": 0.2, "dD": 0.2, "wb": [2.0859375,1.0,1.68359375], "M": [[...],[...],[...]], "Minv": [[...]], "matrix": true},
+           "half3": {"d": 0.2, "dD": 0.2, "wb": [2.0859375,1.0,1.68359375], "M": [[...],[...],[...]], "Minv": [[...]], "matrix": true,
+                     "matrix_blend": 0.0, "fixup": {"k": 8.0, "t": 0.04, "n": 5101, "err_max_before": 590, "err_max_after": 158, "...": "..."}},
            "gat4": {"d": 0.2, "K": 100.0, "planes": [{"g":..,"s2":..}]}},
  "noise": {"model": "auto+iso_cap", "planes": [{"g_est":..,"g_used":..,"s2":..}], "snr18": 107.3, "iso": 100},
  "source": {"name": "P1060444.RW2", "size": 28262912, "sha256": "...", "make": "Panasonic", "model": "DC-S9",
@@ -304,6 +314,12 @@ EOF-4  4    b"RSQE"       (尾标；缺失 = 截断)
 1. 解码得到马赛克 `m̂`（H×W uint16）。
 2. `build_tags`（附录 A.4）：ImageWidth/Length、TileWidth/Length=256、PhotometricInterpretation=32803（CFA）、SamplesPerPixel=1、BitsPerSample（见第 2.7 节）、CFARepeatPatternDim=[2,2]、CFAPattern、CFAPlaneColor=[0,1,2]、CFALayout=1、BlackLevelRepeatDim、BlackLevel、WhiteLevel、ColorMatrix1（rgb_xyz_matrix，分母 10000 的 SRATIONAL）、CalibrationIlluminant1=21（D65）、AsShotNeutral（用相机 WB 整数构成的精确有理数 [wbG/wbR, 1, wbG/wbB]）、BaselineExposure=0、ActiveArea、DefaultCropOrigin/Size、Orientation、Make/Model/UniqueCameraModel、DNGVersion 1.4 / DNGBackwardVersion 1.1、Software=`rawsqueeze <ver> (<engine> <param>)`。
    - 可选（默认开）：`NoiseProfile`，取 `S_c = g_c/(wl−blk)`、`O_c = s2_c/(wl−blk)²`，有损时把 f²/12 的附加方差折算进去。
+   - `CFAPattern` 和 `BlackLevel` 的 2×2 重复图案以 **ActiveArea 原点**为相位基准（DNG 规范）；HEAD 里的 `dng_cfa` / `black_per_position` 以马赛克 (0,0) 为基准，所以 margins 为奇数时按 `out[2i+j] = v[2·((i+top)%2) + (j+left)%2]` 旋转（`dng.rotate_cfa_phase`，2026-10 修复；margins 为偶数时不变，DC-S9 为 0,0）。
+   - **镜头畸变 `OpcodeList3`（2026-10 新增，默认开）**：Panasonic 的机内畸变校正参数（MakerNote `DistortionInfo` 0x0119，16 个 int16，word 0/1/14/15 为校验和；word7 & 0xF == 1 表示开启）转换为一个 `WarpRectilinear` opcode（tag 51022，UNDEFINED，大端，单平面，version 1.3.0.0，flags = 1 Optional，88 字节）。
+     - Panasonic 模型（对 13 张样张用相机 JPEG 实测辨识）：`r_out = S·(r + a·r³ + b·r⁵ + c·r⁷)`，`S = 1/(1 + w5/32768)`，`a = w8/32768`，`b = w4/32768`，`c = w11/32768`；半径除以 `N = w12` 像素（DC-S9 为 3606，即 6000×4000 输出裁切的半对角线）；中心为 DefaultCrop 中心。
+     - 转换：用 Newton 法求 Panasonic 多项式的逆（参数不单调时拒绝），再在整幅 stage-3 图像上按半径加权最小二乘拟合 `kr0 + kr1·r² + kr2·r⁴ + kr3·r⁶`；中心、归一化按 DNG SDK `dng_lens_correction.cpp` 的约定（NR = 中心到四角的最大距离）。拟合误差 0.004–0.37 px，超过 1.0 px（`LENS_FIT_MAX_ERR_PX`）则不写。
+     - 验证：13 张样张以相机 JpgFromRaw2 为几何真值，校正后角落残差中位数 0.14–0.54 px（不校正 6.6–165 px）；Apple ImageIO/`sips` 渲染独立确认 3 张。LibRaw/rawpy 忽略该 opcode（`raw_image` 不变）。
+     - 开关：`write_dng(lens_opcode=...)` / `decode_file(lens_opcode=...)`、CLI `decode --no-lens-opcode`、环境变量 `RAWSQUEEZE_DNG_LENS_OPCODE=0/1`。原始参数始终保留在 XMP `rawsqueeze:PanasonicDistortionInfo`。不写 opcode 时（关闭、校验和不符、参数退化、拟合误差过大）给出警告；相机本身关闭校正时不警告。横向色差（0x011B）未转换。
 3. 像素：`LJ92DNG`（pidng 子类，附录 A.5），256×256 tile，每个 tile reshape 为 (th/2, 2·tw) 后交给 `imagecodecs.ljpeg_encode`，让上方预测器看到同色像素（C：31.6 → 21.6 MB）。边缘 tile 补零（LibRaw 验证逐位一致）。tile 编码放线程池并行（目前单线程 0.33 s）。
    - `--dng-compression none12|none16`：36.2 MB / 0.05 s，48.3 MB / 0.03 s。
 4. EXIF 搬运（单次 exiftool，约 0.35 s）：先把 META 写成临时文件 `skel.rw2`，再运行：
@@ -365,11 +381,11 @@ EOF-4  4    b"RSQE"       (尾标；缺失 = 截断)
 rawsqueeze encode IN... [-o OUT|DIR] [-r] [--preset P] [--engine E] [-q F] [--d D] [--f F] [--dD D]
                   [--effort N] [--layout planes|stack4] [--recon auto|mid|centroid]
                   [--noise-model auto|auto+iso_cap|manual:G,S2] [--snr-threshold T]
-                  [--no-matrix] [--no-satmask] [--threads N] [-j N]
+                  [--no-matrix] [--no-satmask] [--no-fixup] [--fixup-k K] [--fixup-t T] [--threads N] [-j N]
                   [--keep-preview none|small|full] [--no-meta] [--verify [--no-fallback]]
                   [--overwrite|--skip-existing] [--dry-run] [--json]
 rawsqueeze decode IN.rsq... [-o OUT|DIR] [--format dng|npy|pgm16|tiff] [--dng-compression lj92|none12|none16]
-                  [--dng-tile N] [--no-exif] [--extract-preview] [--threads N] [-j N]
+                  [--dng-tile N] [--no-exif] [--no-lens-opcode] [--extract-preview] [--threads N] [-j N]
 rawsqueeze info IN.rsq [--json]          # HEAD + chunk 表 + 大小 + CRC 校验
 rawsqueeze verify IN.rsq --original IN.RW2 [--ev 0,2,3] [--tiles 4|--full]
                   [--metrics psnr,ssimulacra2,butteraugli,noise] [--json]
@@ -467,15 +483,24 @@ def verify_file(rsq_path, original_path, *, evs=(0,2,3), tiles=4, full=False, me
 
 ### 6.4 各预设的验收目标（verify 退出码 2 的判据；默认 4 个 tile 取最差）
 
-| 预设 / 引擎 | 判据 | 来自实测的参考值 |
+**2026-10 重标定**（13 张 DC-S9 样张，ISO 100–51200；实现 `verify.nlq_criteria` / `verify.half3_criteria`）：判据是引擎质量参数的函数，按文件 HEAD 里实际的 f（nlq）或 d（half3）计算；preset 只在 HEAD 没有参数时提供名义值（high: d0.1/f0.5，vl: d0.2/f1，compact: d0.3/f2）。原表（v1 规格）中的若干阈值低于理论下限或把肉眼看不出问题的低 ISO half3 文件判为失败，已替换。
+
+| 引擎 | 判据 | 说明 |
 |---|---|---|
-| lossless | 马赛克 sha256 一致；DNG 重读逐位一致 | 3/3 文件通过（C） |
-| high / half3 d0.1 | +3EV ss2 ≥ 85，ba p3(+3EV) ≤ 0.8 | 裁切 bilinear 94.35/91.77/90.22（A）；AHD 全幅待测 |
-| high / nlq f0.5 | 噪声 std 比 ≤ 1.02，\|bias\| ≤ 0.3 级，ss2 ≥ FLOOR − 3（低 ISO） | 95.0/92.9/91.7 vs FLOOR 95.0/92.6/91.4（B） |
-| **vl / half3 d0.2** | 0EV ss2 ≥ 84，+3EV ss2 ≥ 79，ba p3(+3EV) ≤ 1.0，裁切一致性 = 0 | 全幅 AHD 86.45/83.28/81.48，p3 0.49/0.90（A） |
-| **vl / nlq f1** | 噪声 std 比 ≤ 1.05，\|bias\| ≤ 0.5 级，raw 域 RMSE/σ ≤ 0.32（理论值 f/√12 = 0.289） | ISO4000 噪声比 1.023–1.048；ISO100 +3EV ss2 89.8（B） |
-| compact / half3 d0.3 | +3EV ss2 ≥ 76，ba p3(+3EV) ≤ 1.3 | 84.58/80.55/78.05，p3 1.11（A） |
-| compact / nlq f2 | 噪声 std 比 ≤ 1.18，\|bias\| ≤ 0.5 级（centroid） | 1.089–1.17（B） |
+| lossless / archival（或 nlq f=0） | 马赛克 sha256 一致；DNG 重读逐位一致 | 13/13 通过 |
+| nlq f | raw 域 RMSE/σ ≤ 1.2f/√12 + 0.03；+3EV 噪声 std 比 ≤ √(1+(1.2f)²/12) + 0.03；\|bias8\| ≤ 0.75 + 0.25f²；f ≤ 0.5 且低 ISO（SNR18 ≥ 40 或 ISO ≤ 800）时另加每个 EV 的 ss2 ≥ FLOOR − 3 | 理论值（均匀量化步长 fσ）加估计器余量 ×1.2 / +0.03。f=0.5 / 1 / 2 → 0.203 / 0.376 / 0.723，1.045 / 1.088 / 1.247，0.81 / 1.00 / 1.75。f=1 实测 13 张：RMSE/σ 0.285–0.328，噪声比 1.009–1.066，\|bias8\| 0.009–0.647 |
+| half3 d | ss2(0/+2/+3EV) ≥ 锚点值，ba p3(+3EV) ≤ 锚点值，ba max(+3EV) ≤ 锚点值，裁切一致性 = 0；锚点之间按 d 线性插值，两端按外侧斜率外推，d 限定在 [0.05, 0.6] | 锚点见下表。+3EV ss2 是主要分界，+2EV ss2 第二；0EV ss2 分不开好坏，只作底线。half3 不用噪声比（P1060384 读数 0.71 但看不出问题） |
+| gat4 | 无判据（实验性，verify 只报告） | |
+
+half3 锚点（好 = ISO 100–320 三张，4×/+3EV 看不出差异；坏 = 强制 half3 的 ISO ≥ 640，颗粒被压平）：
+
+| d（预设） | ss2 0 / +2 / +3EV ≥ | ba p3 +3EV ≤ | ba max +3EV ≤ | 好文件最差值（ss2 0/+2/+3，p3） | 坏文件最好值（ISO800） |
+|---|---|---|---|---|---|
+| 0.1（high） | 84 / 82 / 78 | 1.2 | 6 | 88.1 / 85.0 / 81.8，0.90 | 88.6 / 81.1 / 76.2，1.06 |
+| 0.2（vl） | 80 / 77 / 72 | 1.5 | 8 | 84.3 / 79.6 / 76.8，1.23 | 85.3 / 74.9 / 68.3，1.37 |
+| 0.3（compact） | 78 / 73 / 67 | 1.8 | 9 | 81.2 / 75.4 / 71.7，1.52 | 82.8 / 70.3 / 62.4，1.57 |
+
+v1 原判据（仅供对照）：high/half3 +3EV ss2 ≥ 85、p3 ≤ 0.8；high/nlq 噪声比 ≤ 1.02、\|bias\| ≤ 0.3；vl/half3 0EV ss2 ≥ 84、+3EV ss2 ≥ 79、p3 ≤ 1.0；vl/nlq 噪声比 ≤ 1.05、\|bias\| ≤ 0.5、RMSE/σ ≤ 0.32；compact/half3 +3EV ss2 ≥ 76、p3 ≤ 1.3；compact/nlq 噪声比 ≤ 1.18、\|bias\| ≤ 0.5。
 
 ---
 

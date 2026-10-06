@@ -851,7 +851,8 @@ def panasonic_distortion_info(meta_payload: bytes) -> bytes | None:
     The in-camera lens distortion correction parameters (exiftool: DistortionParam02..11,
     DistortionScale, DistortionCorrection) live in the RW2 raw IFD, which has no DNG
     counterpart; rawsqueeze keeps them in the DNG XMP (``rawsqueeze:PanasonicDistortionInfo``)
-    but does not convert them to a WarpRectilinear opcode.  ``None`` if absent.
+    and converts them to a DNG WarpRectilinear opcode (:func:`parse_panasonic_distortion`,
+    ``dng.panasonic_warp_rectilinear``).  ``None`` if absent.
     """
     try:
         blob = parse_meta(meta_payload)
@@ -867,6 +868,76 @@ def panasonic_distortion_info(meta_payload: bytes) -> bytes | None:
     if e is None or e.size <= 0 or e.data_offset + e.size > len(data):
         return None
     return bytes(data[e.data_offset : e.data_offset + e.size])
+
+
+@dataclass(frozen=True)
+class PanasonicDistortion:
+    """Decoded Panasonic ``DistortionInfo`` (0x0119): 16 little-endian int16 words.
+
+    Model (verified against the camera JPEG on 13 DC-S9 / LUMIX S 24-60 + 70-300 frames,
+    see docs/STATUS.md): with radii normalised by ``n`` pixels (word 12, the half-diagonal of
+    the camera's output crop) around the centre of that crop,
+    ``r_out = scale * (r_src + a*r_src**3 + b*r_src**5 + c*r_src**7)`` maps the raw (source)
+    radius to the corrected (camera JPEG) radius, where ``scale = 1/(1 + w5/32768)``
+    (exiftool DistortionScale), ``a = w8/32768`` (DistortionParam08), ``b = w4/32768``
+    (DistortionParam04), ``c = w11/32768`` (DistortionParam11).  Words 2, 3, 6, 9, 10, 13
+    are unused by this model (exiftool DistortionParam02/09 have no measurable effect).
+    """
+
+    words: tuple[int, ...]
+    checksum_ok: bool
+
+    @property
+    def enabled(self) -> bool:
+        """DistortionCorrection flag (low nibble of word 7) == 1."""
+        return (self.words[7] & 0x0F) == 1
+
+    @property
+    def scale(self) -> float:
+        return 1.0 / (1.0 + self.words[5] / 32768.0)
+
+    @property
+    def coeffs(self) -> tuple[float, float, float]:
+        """(a, b, c) for r**3, r**5, r**7."""
+        w = self.words
+        return (w[8] / 32768.0, w[4] / 32768.0, w[11] / 32768.0)
+
+    @property
+    def norm_radius(self) -> int:
+        return int(self.words[12])
+
+    def forward(self, r_src: np.ndarray | float) -> np.ndarray | float:
+        """Corrected (output) radius for a source radius, both in units of ``norm_radius``."""
+        a, b, c = self.coeffs
+        r = r_src
+        r2 = r * r
+        return self.scale * r * (1.0 + r2 * (a + r2 * (b + r2 * c)))
+
+
+def _pana_checksum(data: bytes, start: int, num: int, inc: int) -> int:
+    csum = 0
+    for i in range(num):
+        csum = (73 * csum + data[start + i * inc]) % 0xFFEF
+    return csum
+
+
+def parse_panasonic_distortion(raw: bytes | None) -> PanasonicDistortion | None:
+    """Decode the 32-byte DistortionInfo blob (exiftool PanasonicRaw.pm, ref. syscall.eu).
+
+    ``None`` if the blob is missing or not 32 bytes.  ``checksum_ok`` reports the four
+    embedded checksums (words 0, 1, 14, 15).
+    """
+    if raw is None or len(raw) != 32:
+        return None
+    words = struct.unpack("<16h", raw)
+    u16 = struct.unpack("<16H", raw)
+    ok = (
+        _pana_checksum(raw, 4, 12, 1) == u16[1]
+        and _pana_checksum(raw, 16, 12, 1) == u16[14]
+        and _pana_checksum(raw, 2, 14, 2) == u16[0]
+        and _pana_checksum(raw, 3, 14, 2) == u16[15]
+    )
+    return PanasonicDistortion(words=tuple(int(v) for v in words), checksum_ok=ok)
 
 
 def write_skeleton_file(meta_payload: bytes, path: str | os.PathLike[str]) -> Path:
@@ -909,6 +980,7 @@ __all__ = [
     "JpegStripInfo",
     "MetaBlob",
     "MetaError",
+    "PanasonicDistortion",
     "PreviewRef",
     "RawLayout",
     "TiffInfo",
@@ -922,6 +994,7 @@ __all__ = [
     "make_exif_only",
     "make_skeleton",
     "panasonic_distortion_info",
+    "parse_panasonic_distortion",
     "pack_exif_only",
     "parse_meta",
     "parse_tiff",

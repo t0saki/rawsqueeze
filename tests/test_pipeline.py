@@ -78,15 +78,18 @@ def test_auto_selection_on_fixtures(frame_iso100: RawFrame, frame_iso4000: RawFr
     assert lo.head["noise"]["model"] == "auto+iso_cap"
     assert lo.head["selection"]["requested"] == "auto"
     assert hi.head["mosaic"]["recon_sha256"]  # nlq: free recon
-    assert "recon_sha256" not in lo.head["mosaic"]  # half3 without recon_hash
+    assert lo.head["mosaic"]["recon_sha256"]  # half3: the H3FX guard decodes in-process anyway
+    nofx = encode_frame_ex(frame_iso100, resolve(threads=4, fixup=False))
+    assert "recon_sha256" not in nofx.head["mosaic"] and "fixup" not in nofx.head["codec"]["half3"]
     for enc, frame in ((lo, frame_iso100), (hi, frame_iso4000)):
         _, rsq = _roundtrip(enc.chunks)
         rec = decode_mosaic(rsq)
         assert rec.shape == frame.mosaic.shape
         sat = frame.mosaic >= frame.white
         assert np.all(rec[sat] == frame.white)
-    _, rsq = _roundtrip(hi.chunks)
-    assert np.array_equal(decode_mosaic(rsq), hi.recon)
+    for enc in (lo, hi):
+        _, rsq = _roundtrip(enc.chunks)
+        assert np.array_equal(decode_mosaic(rsq), enc.recon)
 
 
 def test_half3_recon_hash(frame_iso100: RawFrame) -> None:

@@ -82,10 +82,4 @@ def test_acceptance(encoded: dict, key: tuple[str, str]) -> None:
     assert rep.clip["inconsistent"] == 0
     assert rep.acceptance["criteria"] is not None
     failures = list(rep.acceptance["failures"])
-    if rep.engine == "nlq" and key[1] == "compact":
-        # Known deviation (docs/STATUS.md): |bias8| <= 0.5 for nlq f2 sits at the metric's floor on
-        # the night-sky "darkest" tile -- mid LUT gives -0.52, centroid +0.53, and a pure added
-        # Gaussian control with the same error variance gives -0.52.  Allow up to 0.75.
-        assert (rep.noise.get("bias8_abs_max") or 0.0) <= 0.75
-        failures = [f for f in failures if not f.startswith("|bias8|")]
     assert not failures, f"{key}: {failures}"

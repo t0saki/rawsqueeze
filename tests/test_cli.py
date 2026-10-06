@@ -379,3 +379,22 @@ def test_bench_survives_bad_input(raws: Path, tmp_path: Path, capsys: pytest.Cap
     rc = main(["bench", str(raws / "iso100.dng"), "--sweep", "engine=nlq;ff=1", "--metrics", "psnr",
                "--no-floor", "--ev", "3", "--tiles", "1", "--csv", str(tmp_path / "c.csv")])
     assert rc == EXIT_ERROR and "unknown option 'ff'" in capsys.readouterr().err
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not have("exiftool"), reason="exiftool not installed")
+def test_decode_no_lens_opcode_flag(sample_path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:  # type: ignore[no-untyped-def]
+    from rawsqueeze import meta
+
+    src = sample_path("P1060444.RW2")
+    rsq = tmp_path / "a.rsq"
+    assert main(["encode", str(src), "-o", str(rsq), "--preset", "lossless", "--quiet"]) == EXIT_OK
+    for flag, has in (([], True), (["--no-lens-opcode"], False)):
+        out = tmp_path / f"a{len(flag)}.dng"
+        capsys.readouterr()
+        assert main(["decode", str(rsq), "-o", str(out), "--json", "--quiet", *flag]) == EXIT_OK
+        (rep,) = _json_out(capsys)  # type: ignore[misc]
+        assert rep["status"] == "ok"
+        assert rep["lens"]["source"] == "panasonic" and rep["lens"]["opcode"] is has
+        assert (51022 in meta.parse_tiff(out.read_bytes()).ifds[0].entries) is has  # OpcodeList3
+        assert any("WarpRectilinear" in w for w in rep["warnings"]) is (not has)

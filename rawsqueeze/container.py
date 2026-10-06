@@ -64,6 +64,7 @@ KNOWN_CHUNKS: dict[str, tuple[bool, bool]] = {
     "PLNS": (True, False),
     "H3RG": (True, False),
     "H3DG": (True, False),
+    "H3FX": (True, True),  # half3/gat4 max-error fix-up (engines.half3.pack_fixup)
     "SATM": (True, True),
     "G4P0": (True, False),
     "G4P1": (True, False),

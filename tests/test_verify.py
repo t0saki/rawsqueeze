@@ -159,21 +159,63 @@ def test_noise_ratio_and_bias() -> None:
 
 
 def test_acceptance_table_and_check() -> None:
-    assert V.acceptance_criteria("vl", "half3")["ss2_min"] == {0.0: 84.0, 3.0: 79.0}
+    assert V.acceptance_criteria("vl", "half3")["ss2_min"] == {0.0: 80.0, 2.0: 77.0, 3.0: 72.0}
     assert V.acceptance_criteria("archival", "nlq") == {"mosaic_equal": True}
     assert V.acceptance_criteria("vl", "nlq", mode="lossless") == {"mosaic_equal": True}
+    assert V.acceptance_criteria("vl", "nlq", param=0.0) == {"mosaic_equal": True}
     assert V.acceptance_criteria("vl", "gat4") is None
+    assert V.acceptance_criteria(None, "nlq") is None
     assert set(V.ACCEPTANCE) >= {("high", "half3"), ("high", "nlq"), ("vl", "nlq"), ("compact", "half3"), ("compact", "nlq")}
     worst = {
-        0.0: V.TileMetrics("w", 0.0, ss2=85.0, ba_p3=0.5),
-        3.0: V.TileMetrics("w", 3.0, ss2=78.0, ba_p3=1.2),
+        0.0: V.TileMetrics("w", 0.0, ss2=85.0, ba_p3=0.5, ba_max=2.0),
+        3.0: V.TileMetrics("w", 3.0, ss2=70.0, ba_p3=1.6, ba_max=9.0),
     }
     rep = V.VerifyReport("half3", "vl", "lossy", {"low_iso": True}, [0.0, 3.0], [], worst, [], None, {}, {"inconsistent": 2}, False)
     acc = V.check_acceptance(rep)
-    assert not acc["passed"] and len(acc["failures"]) == 3
-    rep.worst[3.0] = V.TileMetrics("w", 3.0, ss2=80.0, ba_p3=0.9)
+    assert not acc["passed"] and len(acc["failures"]) == 4, acc["failures"]
+    assert "ss2@+2EV not requested" in acc["skipped"]
+    rep.worst[3.0] = V.TileMetrics("w", 3.0, ss2=76.8, ba_p3=1.23, ba_max=4.8)  # PANA9831 vl
     rep.clip = {"inconsistent": 0}
     assert V.check_acceptance(rep)["passed"]
+    rep.worst[3.0] = V.TileMetrics("w", 3.0, ss2=68.3, ba_p3=1.38, ba_max=3.7)  # ISO800 forced half3
+    assert not V.check_acceptance(rep)["passed"]
+
+
+def test_nlq_criteria_follow_f() -> None:
+    c1 = V.nlq_criteria(1.0)
+    assert c1["rmse_sigma_max"] == pytest.approx(1.2 / math.sqrt(12) + 0.03, abs=1e-4)
+    assert c1["noise_ratio_max"] == pytest.approx(math.sqrt(1 + 1.44 / 12) + 0.03, abs=1e-4)
+    assert c1["bias8_abs_max"] == 1.0 and "ss2_floor_margin" not in c1
+    assert V.nlq_criteria(0.5)["ss2_floor_margin"] == 3.0
+    prev = None
+    for f in (0.25, 0.5, 1.0, 2.0, 3.0):
+        c = V.nlq_criteria(f)
+        # always above the theoretical value of a uniform quantiser
+        assert c["rmse_sigma_max"] > f / math.sqrt(12) and c["noise_ratio_max"] > math.sqrt(1 + f * f / 12)
+        if prev:
+            assert all(c[k] > prev[k] for k in ("rmse_sigma_max", "noise_ratio_max", "bias8_abs_max"))
+        prev = c
+    assert V.acceptance_criteria("vl", "nlq", param=2.0) == V.nlq_criteria(2.0)
+    assert V.acceptance_criteria("compact", "nlq") == V.nlq_criteria(2.0) == V.ACCEPTANCE[("compact", "nlq")]
+    # the file's own f (HEAD codec) decides, not the preset name
+    noise = {"noise_ratio_max": 1.2, "bias8_abs_max": 0.6, "rmse_sigma_max": 0.6}
+    rep = V.VerifyReport("nlq", "vl", "lossy", {"metrics": ["noise"], "codec": {"nlq": {"f": 2.0}}}, [3.0], [], {}, [],
+                         None, noise, {"inconsistent": 0}, False)
+    assert V.check_acceptance(rep)["passed"]
+    rep.params["codec"] = {"nlq": {"f": 1.0}}
+    assert not V.check_acceptance(rep)["passed"]
+    assert V.codec_param("half3", {"half3": {"d": 0.3}}) == 0.3 and V.codec_param("nlq", None) is None
+
+
+def test_half3_criteria_follow_d() -> None:
+    assert V.half3_criteria(0.2) == V.ACCEPTANCE[("vl", "half3")]
+    lo, mid, hi = V.half3_criteria(0.1), V.half3_criteria(0.15), V.half3_criteria(0.3)
+    for ev in (0.0, 2.0, 3.0):
+        assert lo["ss2_min"][ev] > mid["ss2_min"][ev] > V.half3_criteria(0.2)["ss2_min"][ev] > hi["ss2_min"][ev]
+    assert lo["ba_p3_max"][3.0] < mid["ba_p3_max"][3.0] < hi["ba_p3_max"][3.0]
+    assert mid["ss2_min"][3.0] == pytest.approx((lo["ss2_min"][3.0] + V.half3_criteria(0.2)["ss2_min"][3.0]) / 2)
+    assert V.half3_criteria(5.0) == V.half3_criteria(V.HALF3_D_RANGE[1])  # clamped
+    assert V.acceptance_criteria("compact", "half3", param=0.1) == lo
 
 
 def test_acceptance_unmeasured_is_failure() -> None:

@@ -140,6 +140,8 @@ class DecodeReport:
     lossless_verified: bool | None = None
     recon_match: bool | None = None
     previews: list[str] = field(default_factory=list)
+    lens: dict[str, Any] | None = None
+    """DNG only: lens-distortion handling (:attr:`dng.DngReport.lens`; None without distortion data)."""
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
 
@@ -400,12 +402,15 @@ def decode_file(
     threads: int | None = None,
     extract_preview: bool = False,
     et: ExifTool | None = None,
+    lens_opcode: bool | None = None,
 ) -> DecodeReport:
     """Decode ``src`` (.rsq) into ``dst`` (written atomically, path used verbatim).
 
     ``fmt``: dng (LJ92 by default, EXIF transferred from META), npy, pgm16 (P5 16-bit), tiff
     (16-bit RGB developed with the verify pipeline at 0EV, DefaultCrop applied).
     ``extract_preview``: also write stored camera JPEGs as ``<dst stem>.<Tag>.jpg``.
+    ``lens_opcode``: DNG only; write the Panasonic in-camera distortion correction as an
+    OpcodeList3 WarpRectilinear opcode (None = default on, env ``RAWSQUEEZE_DNG_LENS_OPCODE``).
     """
     if fmt not in DECODE_FORMATS:
         raise ValueError(f"fmt must be one of {DECODE_FORMATS}, got {fmt!r}")
@@ -435,7 +440,8 @@ def decode_file(
             rep.warnings.append("exiftool not found: DNG written without EXIF/MakerNotes")
             exif = False
         dr = write_dng(m, rsq.head, out, compression=dng_compression, tile=dng_tile, threads=threads,
-                       meta=meta, et=use_et, exif=exif)
+                       meta=meta, et=use_et, exif=exif, lens_opcode=lens_opcode)
+        rep.lens = dr.lens
         t["dng_encode"] = dr.t_encode
         t["exif"] = dr.t_exif
         rep.warnings += dr.warnings

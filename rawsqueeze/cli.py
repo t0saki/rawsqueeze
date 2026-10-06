@@ -216,7 +216,7 @@ def _decode_job(job: dict[str, Any]) -> dict[str, Any]:
     try:
         rep = decode_file(job["src"], job["dst"], fmt=job["fmt"], dng_compression=job["dng_compression"],
                           dng_tile=job["dng_tile"], exif=job["exif"], threads=job["threads"],
-                          extract_preview=job["extract_preview"])
+                          extract_preview=job["extract_preview"], lens_opcode=job.get("lens_opcode"))
         return rep.to_dict()
     except Exception as exc:  # noqa: BLE001
         return DecodeReport(src=job["src"], dst=job["dst"], status="error", fmt=job["fmt"],
@@ -379,6 +379,7 @@ def cmd_encode(args: argparse.Namespace) -> int:
             snr_threshold=args.snr_threshold, use_matrix=not args.no_matrix, satmask=not args.no_satmask,
             threads=_threads_for(args, n_jobs), keep_preview=args.keep_preview, store_meta=not args.no_meta,
             noise=not args.no_noise, recon_hash=args.recon_hash or None,
+            fixup=False if args.no_fixup else None, fixup_k=args.fixup_k, fixup_t=args.fixup_t,
         )
     except ValueError as exc:
         _err(str(exc))
@@ -488,7 +489,8 @@ def cmd_decode(args: argparse.Namespace) -> int:
     done0 = len(reports)
     todo = [{"src": os.fspath(j.src), "dst": os.fspath(j.dst), "fmt": args.format,
              "dng_compression": args.dng_compression, "dng_tile": args.dng_tile, "exif": not args.no_exif,
-             "threads": threads, "extract_preview": args.extract_preview} for j in plan if j.action == "run"]
+             "threads": threads, "extract_preview": args.extract_preview,
+             "lens_opcode": False if args.no_lens_opcode else None} for j in plan if j.action == "run"]
     t0 = time.perf_counter()
 
     def on_done(k: int, r: dict[str, Any]) -> None:
@@ -676,6 +678,11 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--no-satmask", action="store_true", help="half3/gat4: no saturation mask (debug)")
     e.add_argument("--no-noise", action="store_true", help="forced half3: skip the noise estimate")
     e.add_argument("--recon-hash", action="store_true", help="half3/gat4: store recon_sha256 (extra decode)")
+    e.add_argument("--no-fixup", action="store_true", help="half3/gat4: no max-error guard (H3FX patch chunk)")
+    e.add_argument("--fixup-k", type=float, default=None,
+                   help="half3/gat4 guard: patch |err| > max(t*range, k*sigma); k (default 8)")
+    e.add_argument("--fixup-t", type=float, default=None,
+                   help="half3/gat4 guard: t as a fraction of white-black (default 0.2*d: 0.04 = 158 DN at 12 bit for d0.2)")
     e.add_argument("--threads", type=int, help="threads per file (default cpu_count // jobs)")
     e.add_argument("-j", "--jobs", type=int, help="parallel files (default min(cpu/4, RAM_GB/1.5))")
     e.add_argument("--keep-preview", default=None, choices=list(KEEP_PREVIEW_CHOICES),
@@ -700,6 +707,9 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--dng-compression", default="lj92", choices=["lj92", "none12", "none16"])
     d.add_argument("--dng-tile", type=int, default=256, help="DNG tile size, multiple of 16 (default 256)")
     d.add_argument("--no-exif", action="store_true", help="do not transfer EXIF/MakerNotes into the DNG")
+    d.add_argument("--no-lens-opcode", action="store_true",
+                   help="DNG: do not convert Panasonic in-camera distortion correction to an OpcodeList3 "
+                        "WarpRectilinear opcode (default on; env RAWSQUEEZE_DNG_LENS_OPCODE=0 does the same)")
     d.add_argument("--extract-preview", action="store_true", help="also write stored camera JPEGs")
     d.add_argument("--threads", type=int, help="threads per file (default cpu_count // jobs)")
     d.add_argument("-j", "--jobs", type=int, help="parallel files")
