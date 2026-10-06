@@ -1,0 +1,3629 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="691.2pt" height="374.4pt" viewBox="0 0 691.2 374.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 374.4 
+L 691.2 374.4 
+L 691.2 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 58.752 329.472 
+L 539.136 329.472 
+L 539.136 37.44 
+L 58.752 37.44 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 58.752 329.472 
+L 191.107343 329.472 
+L 191.107343 37.44 
+L 58.752 37.44 
+z
+" clip-path="url(#p23c6151166)" style="fill: #f3f2ee"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <!-- 100 -->
+      <g style="fill: #52514e" transform="translate(76.117607 341.572) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-14" d="M 1472 4570 
+C 1318 4397 1139 4243 922 4102 
+C 704 3974 486 3885 282 3827 
+L 282 3302 
+C 710 3430 1069 3635 1357 3930 
+L 1357 0 
+L 1882 0 
+L 1882 4570 
+L 1472 4570 
+z
+" transform="scale(0.015625)"/>
+        <path id="PingFangSC-Regular-13" d="M 1920 4659 
+C 1370 4659 960 4422 685 3936 
+C 442 3526 320 2976 320 2285 
+C 320 1594 442 1043 685 634 
+C 960 154 1370 -90 1920 -90 
+C 2464 -90 2874 154 3155 634 
+C 3398 1043 3520 1594 3520 2285 
+C 3520 2976 3398 3526 3155 3936 
+C 2874 4422 2464 4659 1920 4659 
+z
+M 1920 4211 
+C 2330 4211 2624 3994 2803 3552 
+C 2931 3245 3002 2822 3002 2285 
+C 3002 1754 2931 1331 2803 1018 
+C 2624 582 2330 358 1920 358 
+C 1510 358 1216 582 1037 1018 
+C 909 1331 845 1754 845 2285 
+C 845 2822 909 3245 1037 3552 
+C 1216 3994 1510 4211 1920 4211 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(100.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <!-- 320 -->
+      <g style="fill: #52514e" transform="translate(157.857229 341.572) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-16" d="M 1965 4659 
+C 1530 4659 1178 4538 909 4288 
+C 627 4038 461 3693 422 3251 
+L 941 3251 
+C 973 3558 1075 3795 1254 3962 
+C 1427 4128 1664 4205 1971 4205 
+C 2266 4205 2502 4134 2669 3981 
+C 2822 3840 2906 3642 2906 3386 
+C 2906 3130 2822 2931 2662 2790 
+C 2502 2656 2272 2586 1965 2586 
+L 1613 2586 
+L 1613 2176 
+L 1984 2176 
+C 2304 2176 2547 2106 2726 1952 
+C 2906 1798 2995 1587 2995 1312 
+C 2995 1043 2899 819 2720 640 
+C 2522 454 2259 358 1933 358 
+C 1645 358 1408 442 1216 595 
+C 992 781 870 1056 858 1414 
+L 326 1414 
+C 365 902 544 512 870 243 
+C 1146 26 1498 -90 1933 -90 
+C 2406 -90 2790 45 3085 314 
+C 3373 576 3520 915 3520 1331 
+C 3520 1600 3443 1824 3290 2003 
+C 3149 2182 2944 2310 2675 2394 
+C 3174 2560 3424 2906 3424 3418 
+C 3424 3802 3290 4102 3027 4326 
+C 2758 4550 2400 4659 1965 4659 
+z
+" transform="scale(0.015625)"/>
+        <path id="PingFangSC-Regular-15" d="M 1984 4659 
+C 1523 4659 1146 4506 864 4198 
+C 582 3898 435 3488 435 2976 
+L 960 2976 
+C 966 3379 1062 3686 1242 3891 
+C 1408 4109 1651 4211 1965 4211 
+C 2259 4211 2496 4134 2662 3981 
+C 2829 3827 2912 3616 2912 3334 
+C 2912 3040 2790 2765 2560 2515 
+C 2438 2387 2202 2202 1843 1946 
+C 1357 1613 1030 1338 851 1133 
+C 544 794 397 416 397 0 
+L 3443 0 
+L 3443 467 
+L 1043 467 
+C 1126 774 1459 1126 2042 1517 
+C 2515 1837 2829 2086 2989 2253 
+C 3283 2573 3437 2931 3437 3328 
+C 3437 3725 3296 4051 3027 4294 
+C 2752 4538 2406 4659 1984 4659 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-16"/>
+       <use xlink:href="#PingFangSC-Regular-15" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(120 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <!-- 640 -->
+      <g style="fill: #52514e" transform="translate(207.160799 341.572) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-19" d="M 1984 4659 
+C 1466 4659 1056 4422 755 3942 
+C 467 3488 326 2893 326 2163 
+C 326 1466 454 922 723 531 
+C 1005 122 1421 -90 1978 -90 
+C 2426 -90 2790 64 3085 358 
+C 3373 653 3520 1030 3520 1478 
+C 3520 1926 3386 2285 3123 2566 
+C 2854 2848 2502 2989 2067 2989 
+C 1798 2989 1562 2925 1357 2790 
+C 1139 2662 979 2477 864 2240 
+L 838 2240 
+C 832 2323 832 2381 832 2406 
+C 832 2925 928 3354 1133 3686 
+C 1338 4045 1619 4218 1978 4218 
+C 2509 4218 2822 3962 2925 3437 
+L 3443 3437 
+C 3315 4256 2829 4659 1984 4659 
+z
+M 1965 2554 
+C 2278 2554 2528 2458 2720 2253 
+C 2906 2061 3002 1805 3002 1478 
+C 3002 1152 2906 883 2714 666 
+C 2522 461 2272 352 1965 352 
+C 1645 352 1395 461 1203 678 
+C 1011 883 922 1146 922 1466 
+C 922 1786 1018 2042 1216 2246 
+C 1414 2451 1664 2554 1965 2554 
+z
+" transform="scale(0.015625)"/>
+        <path id="PingFangSC-Regular-17" d="M 2458 4570 
+L 154 1536 
+L 154 1037 
+L 2451 1037 
+L 2451 0 
+L 2950 0 
+L 2950 1037 
+L 3693 1037 
+L 3693 1466 
+L 2950 1466 
+L 2950 4570 
+L 2458 4570 
+z
+M 2432 3885 
+L 2451 3885 
+L 2451 1466 
+L 595 1466 
+L 2432 3885 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-19"/>
+       <use xlink:href="#PingFangSC-Regular-17" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(120 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <!-- 1250 -->
+      <g style="fill: #52514e" transform="translate(252.772724 341.572) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-18" d="M 672 4570 
+L 429 2048 
+L 928 2048 
+C 1018 2227 1158 2368 1338 2458 
+C 1510 2554 1702 2598 1920 2598 
+C 2253 2598 2515 2502 2701 2298 
+C 2893 2099 2995 1818 2995 1453 
+C 2995 1133 2886 870 2682 666 
+C 2470 461 2208 358 1888 358 
+C 1606 358 1370 429 1190 563 
+C 986 717 870 941 845 1229 
+L 326 1229 
+C 358 813 531 480 851 237 
+C 1133 19 1478 -90 1882 -90 
+C 2330 -90 2714 51 3021 326 
+C 3347 621 3514 998 3514 1459 
+C 3514 1952 3373 2336 3104 2618 
+C 2835 2893 2483 3027 2048 3027 
+C 1837 3027 1645 2995 1466 2918 
+C 1267 2842 1101 2726 973 2573 
+L 947 2573 
+L 1101 4102 
+L 3328 4102 
+L 3328 4570 
+L 672 4570 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-15" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-18" transform="translate(100.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(160.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_5"/>
+     <g id="text_5">
+      <!-- 2000 -->
+      <g style="fill: #52514e" transform="translate(285.208777 341.572) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-15"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(120 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(180 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_6"/>
+     <g id="text_6">
+      <!-- 4000 -->
+      <g style="fill: #52514e" transform="translate(334.512347 341.572) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-17"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(120 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(180 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_7">
+     <g id="line2d_7"/>
+     <g id="text_7">
+      <!-- 10000 -->
+      <g style="fill: #52514e" transform="translate(397.683434 341.572) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(100.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(160.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(220.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_8">
+     <g id="line2d_8"/>
+     <g id="text_8">
+      <!-- 51200 -->
+      <g style="fill: #52514e" transform="translate(513.849734 341.572) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-18"/>
+       <use xlink:href="#PingFangSC-Regular-14" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-15" transform="translate(100.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(160.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(220.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_9">
+     <g id="line2d_9">
+      <defs>
+       <path id="mb4e0163d3c" d="M 0 0 
+L 0 3 
+" style="stroke: #e6e5e1; stroke-width: 0.6"/>
+      </defs>
+      <g>
+       <use xlink:href="#mb4e0163d3c" x="232.033003" y="329.472" style="fill: #e6e5e1; stroke: #e6e5e1; stroke-width: 0.6"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_10">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#mb4e0163d3c" x="281.336573" y="329.472" style="fill: #e6e5e1; stroke: #e6e5e1; stroke-width: 0.6"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_11">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#mb4e0163d3c" x="330.640143" y="329.472" style="fill: #e6e5e1; stroke: #e6e5e1; stroke-width: 0.6"/>
+      </g>
+     </g>
+    </g>
+    <g id="text_9">
+     <!-- ISO（对数刻度） -->
+     <g style="fill: #52514e" transform="translate(260.763531 355.572) scale(0.1 -0.1)">
+      <defs>
+       <path id="PingFangSC-Regular-2c" d="M 499 4570 
+L 499 0 
+L 1018 0 
+L 1018 4570 
+L 499 4570 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-36" d="M 1997 4659 
+C 1523 4659 1133 4557 832 4352 
+C 493 4134 326 3821 326 3424 
+C 326 3040 499 2746 851 2541 
+C 998 2464 1350 2336 1901 2170 
+C 2413 2022 2739 1914 2867 1837 
+C 3168 1677 3322 1453 3322 1165 
+C 3322 922 3206 730 2976 589 
+C 2746 448 2438 378 2067 378 
+C 1658 378 1350 467 1139 634 
+C 909 819 768 1114 723 1510 
+L 205 1510 
+C 243 947 442 531 800 256 
+C 1107 26 1530 -90 2067 -90 
+C 2611 -90 3040 26 3360 250 
+C 3680 480 3840 800 3840 1197 
+C 3840 1613 3648 1933 3270 2163 
+C 3078 2278 2682 2426 2080 2605 
+C 1638 2733 1357 2829 1242 2893 
+C 979 3034 851 3219 851 3450 
+C 851 3712 960 3904 1178 4032 
+C 1370 4147 1632 4198 1971 4198 
+C 2342 4198 2630 4122 2835 3955 
+C 3034 3795 3162 3552 3219 3219 
+L 3738 3219 
+C 3693 3699 3520 4064 3213 4307 
+C 2918 4544 2509 4659 1997 4659 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-32" d="M 2458 4659 
+C 1766 4659 1229 4429 832 3968 
+C 454 3533 269 2970 269 2278 
+C 269 1594 454 1030 832 595 
+C 1229 141 1766 -90 2451 -90 
+C 3136 -90 3680 141 4077 595 
+C 4448 1030 4640 1587 4640 2278 
+C 4640 2976 4448 3539 4077 3974 
+C 3680 4435 3136 4659 2458 4659 
+z
+M 2458 4192 
+C 2982 4192 3392 4019 3686 3667 
+C 3968 3322 4115 2861 4115 2278 
+C 4115 1702 3968 1248 3686 902 
+C 3392 557 2976 378 2451 378 
+C 1926 378 1510 557 1216 915 
+C 934 1261 794 1715 794 2278 
+C 794 2848 934 3302 1216 3648 
+C 1517 4013 1933 4192 2458 4192 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-481" d="M 5440 5293 
+C 5158 4883 4941 4442 4781 3974 
+C 4589 3424 4499 2867 4499 2298 
+C 4499 1741 4589 1184 4781 634 
+C 4941 173 5158 -269 5440 -685 
+L 5888 -685 
+C 5632 -256 5427 186 5280 640 
+C 5088 1203 4998 1760 4998 2304 
+C 4998 2854 5088 3405 5280 3968 
+C 5427 4429 5632 4870 5888 5293 
+L 5440 5293 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-a52" d="M 3053 3987 
+L 3053 3546 
+L 4909 3546 
+L 4909 141 
+C 4909 -83 4787 -198 4550 -198 
+C 4256 -198 3942 -186 3610 -166 
+L 3706 -621 
+L 4710 -621 
+C 5146 -621 5370 -403 5370 26 
+L 5370 3546 
+L 6080 3546 
+L 6080 3987 
+L 5370 3987 
+L 5370 5242 
+L 4909 5242 
+L 4909 3987 
+L 3053 3987 
+z
+M 762 3571 
+L 454 3283 
+C 902 2784 1312 2291 1670 1811 
+C 1338 1184 870 640 269 179 
+L 538 -224 
+C 1126 262 1600 813 1952 1427 
+C 2182 1101 2394 781 2586 461 
+L 2918 794 
+C 2694 1152 2445 1517 2176 1875 
+C 2509 2586 2688 3379 2720 4250 
+L 2720 4589 
+L 550 4589 
+L 550 4141 
+L 2304 4141 
+C 2259 3462 2118 2835 1882 2259 
+C 1536 2694 1165 3136 762 3571 
+z
+M 3398 2790 
+L 3046 2534 
+C 3443 2042 3770 1574 4026 1133 
+L 4390 1389 
+C 4160 1798 3827 2266 3398 2790 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-dc4" d="M 4211 3808 
+L 5158 3808 
+C 5133 2944 4998 2189 4749 1542 
+C 4493 2080 4288 2726 4128 3475 
+L 4211 3808 
+z
+M 4538 1082 
+C 4243 538 3853 96 3354 -250 
+L 3590 -634 
+C 4070 -288 4467 141 4774 653 
+C 5094 115 5478 -320 5926 -640 
+L 6176 -262 
+C 5715 51 5325 493 4992 1069 
+C 5350 1824 5549 2739 5581 3808 
+L 5997 3808 
+L 5997 4250 
+L 4307 4250 
+C 4358 4531 4410 4838 4448 5165 
+L 4000 5242 
+C 3872 4026 3616 3059 3238 2342 
+L 3526 1990 
+C 3661 2221 3789 2483 3904 2778 
+C 4077 2138 4288 1574 4538 1082 
+z
+M 1504 2253 
+C 1459 2125 1408 1990 1350 1850 
+L 416 1850 
+L 416 1446 
+L 1171 1446 
+C 1043 1190 896 928 730 646 
+C 1043 531 1338 410 1619 288 
+C 1248 77 794 -96 269 -237 
+L 486 -621 
+C 1126 -442 1658 -205 2080 90 
+C 2458 -77 2784 -250 3066 -416 
+L 3315 -58 
+C 3034 96 2739 237 2432 378 
+C 2765 685 3002 1050 3142 1472 
+L 3142 1850 
+L 1805 1850 
+C 1843 1965 1888 2080 1933 2202 
+L 1504 2253 
+z
+M 2010 557 
+C 1779 653 1536 742 1280 832 
+C 1408 1024 1523 1229 1626 1446 
+L 2726 1446 
+C 2573 1114 2330 813 2010 557 
+z
+M 922 5107 
+L 557 4986 
+C 710 4742 851 4467 986 4154 
+L 1318 4307 
+C 1203 4589 1075 4858 922 5107 
+z
+M 2867 5126 
+C 2752 4858 2586 4589 2381 4314 
+L 2707 4147 
+C 2912 4416 3072 4691 3200 4973 
+L 2867 5126 
+z
+M 429 4000 
+L 429 3597 
+L 1338 3597 
+C 1146 3245 800 2925 307 2637 
+L 531 2266 
+C 1082 2637 1466 3072 1677 3578 
+L 1677 2362 
+L 2106 2362 
+L 2106 3194 
+C 2336 3040 2611 2835 2931 2579 
+L 3168 2938 
+C 2810 3155 2451 3354 2106 3526 
+L 2106 3597 
+L 3270 3597 
+L 3270 4000 
+L 2106 4000 
+L 2106 5222 
+L 1677 5222 
+L 1677 4000 
+L 429 4000 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-6b0" d="M 4173 4666 
+L 4173 678 
+L 4614 678 
+L 4614 4666 
+L 4173 4666 
+z
+M 5274 -582 
+C 5658 -582 5856 -384 5856 6 
+L 5856 5210 
+L 5395 5210 
+L 5395 122 
+C 5395 -70 5299 -173 5114 -173 
+C 4832 -173 4538 -160 4230 -141 
+L 4333 -582 
+L 5274 -582 
+z
+M 2419 486 
+C 2861 109 3213 -256 3482 -602 
+L 3821 -256 
+C 3520 90 3155 442 2726 787 
+C 3117 1203 3456 1683 3744 2227 
+L 3341 2432 
+C 2650 1114 1619 224 237 -243 
+L 499 -640 
+C 1229 -384 1869 -6 2419 486 
+z
+M 2086 5280 
+L 1594 5203 
+C 1709 5005 1818 4781 1920 4538 
+L 358 4538 
+L 358 4109 
+L 1485 4109 
+C 1120 3398 826 2963 595 2797 
+C 570 2784 538 2771 493 2758 
+L 608 2330 
+C 1133 2368 1632 2419 2099 2470 
+C 1626 1926 1037 1530 333 1274 
+L 589 877 
+C 1754 1325 2630 2170 3232 3398 
+L 2842 3603 
+C 2720 3360 2586 3123 2432 2899 
+C 1997 2842 1568 2797 1133 2758 
+C 1376 3040 1651 3488 1971 4109 
+L 3757 4109 
+L 3757 4538 
+L 2400 4538 
+C 2298 4819 2195 5062 2086 5280 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-b36" d="M 1670 1709 
+L 1670 1312 
+L 2061 1312 
+C 2355 909 2746 557 3219 262 
+C 2643 19 1978 -154 1235 -262 
+L 1434 -666 
+C 2278 -525 3027 -294 3674 13 
+C 4282 -294 5030 -518 5914 -666 
+L 6112 -269 
+C 5350 -166 4685 6 4109 250 
+C 4627 557 5062 934 5421 1370 
+L 5421 1709 
+L 1670 1709 
+z
+M 2547 1312 
+L 4819 1312 
+C 4486 986 4096 704 3648 467 
+C 3206 698 2842 979 2547 1312 
+z
+M 1299 3142 
+L 2374 3142 
+L 2374 2144 
+L 4966 2144 
+L 4966 3142 
+L 5952 3142 
+L 5952 3565 
+L 4966 3565 
+L 4966 4090 
+L 4518 4090 
+L 4518 3565 
+L 2822 3565 
+L 2822 4083 
+L 2374 4083 
+L 2374 3565 
+L 1299 3565 
+L 1299 4294 
+L 5965 4294 
+L 5965 4730 
+L 3770 4730 
+C 3699 4922 3622 5101 3546 5261 
+L 3059 5184 
+C 3149 5043 3226 4896 3302 4730 
+L 838 4730 
+L 838 2643 
+C 826 1382 634 397 262 -314 
+L 608 -621 
+C 1043 198 1274 1286 1299 2643 
+L 1299 3142 
+z
+M 2822 3142 
+L 4518 3142 
+L 4518 2534 
+L 2822 2534 
+L 2822 3142 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-482" d="M 512 5293 
+C 768 4870 966 4429 1120 3968 
+C 1306 3405 1402 2854 1402 2304 
+C 1402 1760 1306 1203 1120 640 
+C 966 186 768 -256 512 -685 
+L 960 -685 
+C 1235 -269 1453 173 1619 634 
+C 1805 1184 1901 1741 1901 2298 
+C 1901 2867 1805 3424 1619 3974 
+C 1453 4442 1235 4883 960 5293 
+L 512 5293 
+z
+" transform="scale(0.015625)"/>
+      </defs>
+      <use xlink:href="#PingFangSC-Regular-2c"/>
+      <use xlink:href="#PingFangSC-Regular-36" transform="translate(23.703125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-32" transform="translate(86.90625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-481" transform="translate(163.609375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-a52" transform="translate(263.609375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-dc4" transform="translate(363.609375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-6b0" transform="translate(463.609375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-b36" transform="translate(563.609375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-482" transform="translate(663.609375 0)"/>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_12">
+      <path d="M 58.752 303.18042 
+L 539.136 303.18042 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_13"/>
+     <g id="text_10">
+      <!-- 1.5× -->
+      <g style="fill: #52514e" transform="translate(36.552 307.48042) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-11" d="M 845 762 
+C 730 762 640 723 570 646 
+C 493 570 454 480 454 365 
+C 454 256 493 166 570 90 
+C 640 13 730 -26 845 -26 
+C 947 -26 1043 13 1120 90 
+C 1197 166 1235 256 1235 365 
+C 1235 480 1197 570 1120 646 
+C 1043 723 947 762 845 762 
+z
+" transform="scale(0.015625)"/>
+        <path id="PingFangSC-Regular-9a" d="M 672 3226 
+L 365 2918 
+L 1638 1658 
+L 365 390 
+L 672 83 
+L 1939 1350 
+L 3200 83 
+L 3507 390 
+L 2240 1658 
+L 3507 2918 
+L 3200 3226 
+L 1939 1958 
+L 672 3226 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-11" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-18" transform="translate(66.5 0)"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(126.5 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_14">
+      <path d="M 58.752 274.714007 
+L 539.136 274.714007 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_15"/>
+     <g id="text_11">
+      <!-- 2× -->
+      <g style="fill: #52514e" transform="translate(43.202 279.014007) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-15"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(60 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_16">
+      <path d="M 58.752 234.592851 
+L 539.136 234.592851 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_17"/>
+     <g id="text_12">
+      <!-- 3× -->
+      <g style="fill: #52514e" transform="translate(43.202 238.892851) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-16"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(60 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_18">
+      <path d="M 58.752 206.126437 
+L 539.136 206.126437 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_19"/>
+     <g id="text_13">
+      <!-- 4× -->
+      <g style="fill: #52514e" transform="translate(43.202 210.426437) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-17"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(60 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_20">
+      <path d="M 58.752 184.046172 
+L 539.136 184.046172 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_21"/>
+     <g id="text_14">
+      <!-- 5× -->
+      <g style="fill: #52514e" transform="translate(43.202 188.346172) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-18"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(60 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_22">
+      <path d="M 58.752 150.751925 
+L 539.136 150.751925 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_23"/>
+     <g id="text_15">
+      <!-- 7× -->
+      <g style="fill: #52514e" transform="translate(43.731687 155.051925) scale(0.1 -0.1)">
+       <defs>
+        <path id="PingFangSC-Regular-1a" d="M 218 4570 
+L 218 4090 
+L 2682 4090 
+L 979 0 
+L 1536 0 
+L 3219 4141 
+L 3219 4570 
+L 218 4570 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#PingFangSC-Regular-1a"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(54.703125 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_24">
+      <path d="M 58.752 115.458602 
+L 539.136 115.458602 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_25"/>
+     <g id="text_16">
+      <!-- 10× -->
+      <g style="fill: #52514e" transform="translate(39.192625 119.758602) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(100.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_26">
+      <path d="M 58.752 75.337446 
+L 539.136 75.337446 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_27"/>
+     <g id="text_17">
+      <!-- 15× -->
+      <g style="fill: #52514e" transform="translate(39.192625 79.637446) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-14"/>
+       <use xlink:href="#PingFangSC-Regular-18" transform="translate(40.09375 0)"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(100.09375 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_28">
+      <path d="M 58.752 46.871033 
+L 539.136 46.871033 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_29"/>
+     <g id="text_18">
+      <!-- 20× -->
+      <g style="fill: #52514e" transform="translate(37.202 51.171033) scale(0.1 -0.1)">
+       <use xlink:href="#PingFangSC-Regular-15"/>
+       <use xlink:href="#PingFangSC-Regular-13" transform="translate(60 0)"/>
+       <use xlink:href="#PingFangSC-Regular-9a" transform="translate(120 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="text_19">
+     <!-- 压缩率（RW2 文件大小 ÷ .rsq 大小，对数刻度） -->
+     <g style="fill: #52514e" transform="translate(30.572312 292.770062) rotate(-90) scale(0.1 -0.1)">
+      <defs>
+       <path id="PingFangSC-Regular-734" d="M 1690 2778 
+L 1690 2323 
+L 3456 2323 
+L 3456 77 
+L 1344 77 
+L 1344 -371 
+L 6106 -371 
+L 6106 77 
+L 3917 77 
+L 3917 2323 
+L 5754 2323 
+L 5754 2778 
+L 3917 2778 
+L 3917 4090 
+L 3456 4090 
+L 3456 2778 
+L 1690 2778 
+z
+M 4774 1965 
+L 4416 1741 
+C 4781 1235 5069 774 5286 352 
+L 5658 614 
+C 5453 998 5158 1453 4774 1965 
+z
+M 5946 4960 
+L 813 4960 
+L 813 2931 
+C 800 1530 602 435 224 -346 
+L 576 -659 
+C 1018 237 1248 1434 1274 2931 
+L 1274 4512 
+L 5946 4512 
+L 5946 4960 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-15bd" d="M 5997 4717 
+L 4448 4717 
+C 4378 4922 4307 5107 4230 5274 
+L 3744 5197 
+C 3827 5056 3904 4896 3974 4717 
+L 2374 4717 
+L 2374 3757 
+L 2810 3757 
+L 2810 4333 
+L 5562 4333 
+L 5562 3853 
+L 5997 3853 
+L 5997 4717 
+z
+M 2797 2240 
+L 2797 -563 
+L 3213 -563 
+L 3213 2957 
+C 3341 3226 3450 3507 3539 3802 
+L 3155 3981 
+C 2950 3277 2618 2650 2170 2099 
+L 2317 1626 
+C 2490 1818 2650 2022 2797 2240 
+z
+M 3718 3680 
+L 3718 3270 
+L 4608 3270 
+L 4486 2675 
+L 3789 2675 
+L 3789 -570 
+L 4198 -570 
+L 4198 -275 
+L 5414 -275 
+L 5414 -570 
+L 5824 -570 
+L 5824 2675 
+L 4890 2675 
+L 5024 3270 
+L 5901 3270 
+L 5901 3680 
+L 3718 3680 
+z
+M 4198 115 
+L 4198 1037 
+L 5414 1037 
+L 5414 115 
+L 4198 115 
+z
+M 4198 1421 
+L 4198 2278 
+L 5414 2278 
+L 5414 1421 
+L 4198 1421 
+z
+M 2323 614 
+C 1766 378 1114 192 371 51 
+L 429 -410 
+C 1133 -262 1766 -70 2323 173 
+L 2323 614 
+z
+M 1299 5248 
+C 1069 4493 800 3814 493 3226 
+C 435 3136 371 3078 294 3040 
+L 410 2618 
+C 742 2669 1075 2726 1408 2790 
+C 1088 2163 813 1722 589 1466 
+C 531 1414 461 1370 378 1331 
+L 499 909 
+C 1024 986 1568 1146 2138 1376 
+L 2138 1805 
+C 1773 1645 1408 1517 1050 1427 
+C 1389 1888 1818 2656 2336 3731 
+L 1926 3885 
+C 1818 3648 1715 3424 1619 3219 
+C 1350 3162 1088 3117 832 3078 
+C 1139 3578 1440 4243 1741 5075 
+L 1299 5248 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-1232" d="M 448 4691 
+L 448 4256 
+L 2803 4256 
+C 2598 3840 2330 3533 1997 3334 
+L 2086 2963 
+C 2458 2989 2816 3021 3162 3046 
+C 2765 2598 2426 2291 2144 2131 
+L 1978 2093 
+L 2067 1690 
+C 2374 1715 2669 1741 2963 1773 
+L 2963 1082 
+L 352 1082 
+L 352 640 
+L 2963 640 
+L 2963 -666 
+L 3437 -666 
+L 3437 640 
+L 6061 640 
+L 6061 1082 
+L 3437 1082 
+L 3437 1830 
+C 3648 1856 3859 1888 4064 1926 
+C 4115 1792 4173 1645 4224 1491 
+L 4640 1677 
+C 4486 2099 4301 2496 4090 2867 
+L 3699 2739 
+C 3770 2598 3840 2445 3917 2278 
+C 3533 2214 3136 2157 2726 2106 
+C 3187 2490 3731 3072 4346 3853 
+L 3936 4019 
+C 3782 3814 3635 3622 3488 3437 
+L 2650 3360 
+C 2880 3590 3091 3891 3277 4256 
+L 5952 4256 
+L 5952 4691 
+L 3430 4691 
+C 3341 4922 3245 5120 3142 5299 
+L 2675 5222 
+C 2784 5062 2880 4883 2970 4691 
+L 448 4691 
+z
+M 1517 2765 
+C 1216 2413 877 2106 506 1843 
+L 813 1498 
+C 1178 1766 1530 2099 1862 2509 
+L 1517 2765 
+z
+M 883 4038 
+L 563 3731 
+C 947 3456 1254 3194 1472 2944 
+L 1792 3264 
+C 1549 3520 1242 3782 883 4038 
+z
+M 4896 2765 
+L 4602 2483 
+C 5011 2138 5331 1805 5562 1498 
+L 5894 1830 
+C 5626 2138 5293 2451 4896 2765 
+z
+M 5395 4058 
+C 5146 3763 4870 3501 4563 3277 
+L 4851 2944 
+C 5165 3174 5466 3456 5754 3795 
+L 5395 4058 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-35" d="M 461 4570 
+L 461 0 
+L 986 0 
+L 986 1965 
+L 2368 1965 
+C 2656 1965 2874 1914 3027 1798 
+C 3194 1683 3290 1485 3315 1216 
+L 3373 608 
+C 3392 352 3456 154 3558 0 
+L 4128 0 
+C 3994 166 3910 390 3885 672 
+L 3814 1376 
+C 3763 1837 3520 2112 3085 2208 
+L 3085 2221 
+C 3347 2285 3552 2413 3706 2618 
+C 3846 2816 3917 3040 3917 3296 
+C 3917 3718 3776 4038 3507 4256 
+C 3245 4467 2886 4570 2432 4570 
+L 461 4570 
+z
+M 986 4115 
+L 2368 4115 
+C 2720 4115 2982 4045 3149 3904 
+C 3302 3770 3386 3558 3386 3277 
+C 3386 3008 3302 2803 3142 2656 
+C 2963 2502 2701 2419 2368 2419 
+L 986 2419 
+L 986 4115 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-3a" d="M 32 4570 
+L 1344 0 
+L 1926 0 
+L 2970 3808 
+L 2989 3808 
+L 4026 0 
+L 4608 0 
+L 5920 4570 
+L 5331 4570 
+L 4326 736 
+L 4301 736 
+L 3264 4570 
+L 2694 4570 
+L 1651 736 
+L 1626 736 
+L 621 4570 
+L 32 4570 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-3" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-dc8" d="M 410 4147 
+L 410 3686 
+L 1395 3686 
+C 1683 2701 2195 1843 2938 1114 
+C 2246 486 1363 32 288 -256 
+L 531 -659 
+C 1619 -346 2528 147 3258 819 
+C 3949 224 4819 -269 5882 -666 
+L 6131 -282 
+C 5107 96 4256 570 3578 1146 
+C 4205 1824 4678 2675 4992 3686 
+L 5990 3686 
+L 5990 4147 
+L 3546 4147 
+C 3341 4589 3123 4966 2880 5274 
+L 2419 5107 
+C 2675 4806 2886 4486 3059 4147 
+L 410 4147 
+z
+M 1850 3686 
+L 4512 3686 
+C 4243 2803 3827 2054 3258 1434 
+C 2592 2074 2125 2822 1850 3686 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-56f" d="M 1677 5267 
+C 1370 4269 883 3379 205 2611 
+L 352 2118 
+C 595 2374 819 2643 1024 2925 
+L 1024 -646 
+L 1478 -646 
+L 1478 3629 
+C 1734 4083 1946 4563 2112 5069 
+L 1677 5267 
+z
+M 2752 4845 
+C 2611 3994 2349 3270 1958 2682 
+L 2253 2298 
+C 2490 2630 2688 3008 2848 3430 
+L 3936 3430 
+L 3936 1888 
+L 2054 1888 
+L 2054 1446 
+L 3936 1446 
+L 3936 -614 
+L 4397 -614 
+L 4397 1446 
+L 6106 1446 
+L 6106 1888 
+L 4397 1888 
+L 4397 3430 
+L 5869 3430 
+L 5869 3878 
+L 4397 3878 
+L 4397 5210 
+L 3936 5210 
+L 3936 3878 
+L 2995 3878 
+C 3085 4160 3155 4467 3206 4787 
+L 2752 4845 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-95f" d="M 390 3546 
+L 390 3098 
+L 2803 3098 
+C 2470 1523 1626 397 262 -275 
+L 550 -659 
+C 1914 51 2797 1184 3194 2739 
+C 3674 1293 4557 179 5843 -614 
+L 6131 -243 
+C 4819 538 3936 1651 3488 3098 
+L 6010 3098 
+L 6010 3546 
+L 3354 3546 
+C 3405 3942 3437 4358 3437 4806 
+L 3437 5222 
+L 2963 5222 
+L 2963 4704 
+C 2957 4301 2931 3917 2880 3546 
+L 390 3546 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-a5c" d="M 2893 -570 
+C 3328 -570 3552 -339 3552 109 
+L 3552 5133 
+L 3078 5133 
+L 3078 230 
+C 3078 -6 2957 -128 2720 -128 
+C 2432 -128 2125 -115 1805 -90 
+L 1914 -570 
+L 2893 -570 
+z
+M 1363 3648 
+C 1107 2496 730 1581 218 902 
+L 614 550 
+C 1114 1216 1517 2189 1824 3469 
+L 1363 3648 
+z
+M 4998 3802 
+L 4582 3539 
+C 5075 2432 5466 1427 5754 518 
+L 6163 806 
+C 5894 1658 5504 2656 4998 3802 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-ba" d="M 1933 3187 
+C 1824 3187 1734 3155 1664 3078 
+C 1587 3014 1549 2925 1549 2810 
+C 1549 2701 1587 2611 1664 2534 
+C 1734 2464 1824 2426 1933 2426 
+C 2042 2426 2138 2464 2214 2534 
+C 2285 2605 2323 2694 2323 2810 
+C 2323 2925 2285 3014 2214 3078 
+C 2138 3155 2048 3187 1933 3187 
+z
+M 320 1875 
+L 320 1440 
+L 3552 1440 
+L 3552 1875 
+L 320 1875 
+z
+M 1933 883 
+C 1824 883 1734 851 1664 781 
+C 1587 710 1549 621 1549 506 
+C 1549 397 1587 307 1664 230 
+C 1734 160 1824 122 1933 122 
+C 2042 122 2138 160 2214 230 
+C 2285 307 2323 397 2323 506 
+C 2323 621 2285 710 2214 781 
+C 2138 851 2048 883 1933 883 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-55" d="M 1850 3398 
+C 1619 3398 1421 3328 1248 3187 
+C 1107 3078 992 2925 902 2733 
+L 902 3309 
+L 397 3309 
+L 397 0 
+L 902 0 
+L 902 1754 
+C 902 2061 986 2323 1165 2541 
+C 1338 2771 1555 2880 1811 2880 
+C 1971 2880 2138 2861 2304 2810 
+L 2304 3322 
+C 2182 3373 2029 3398 1850 3398 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-56" d="M 1568 3398 
+C 1197 3398 890 3315 659 3149 
+C 410 2982 288 2765 288 2483 
+C 288 2202 410 1990 666 1837 
+C 819 1734 1094 1638 1485 1542 
+C 1843 1453 2080 1382 2189 1331 
+C 2394 1229 2502 1088 2502 902 
+C 2502 531 2202 339 1613 339 
+C 1331 339 1120 390 979 493 
+C 838 608 742 794 704 1056 
+L 205 1056 
+C 282 294 755 -90 1626 -90 
+C 2560 -90 3027 256 3027 934 
+C 3027 1222 2893 1446 2630 1613 
+C 2458 1722 2176 1824 1779 1920 
+C 1446 2010 1216 2080 1094 2138 
+C 902 2234 813 2355 813 2496 
+C 813 2643 883 2758 1024 2842 
+C 1152 2931 1331 2970 1562 2970 
+C 1824 2970 2029 2918 2170 2816 
+C 2298 2726 2381 2573 2426 2368 
+L 2925 2368 
+C 2835 3059 2387 3398 1568 3398 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-54" d="M 1773 3398 
+C 1286 3398 909 3226 640 2867 
+C 390 2547 269 2144 269 1645 
+C 269 1158 390 755 634 435 
+C 902 90 1274 -90 1747 -90 
+C 2221 -90 2586 141 2842 602 
+L 2842 -1267 
+L 3354 -1267 
+L 3354 3309 
+L 2874 3309 
+L 2874 2765 
+C 2630 3187 2266 3398 1773 3398 
+z
+M 1837 2976 
+C 2170 2976 2426 2848 2611 2586 
+C 2771 2355 2854 2048 2854 1677 
+L 2854 1613 
+C 2854 1229 2758 922 2579 685 
+C 2394 454 2150 333 1856 333 
+C 1498 333 1222 461 1043 704 
+C 877 934 794 1248 794 1645 
+C 794 2035 870 2349 1030 2579 
+C 1210 2848 1478 2976 1837 2976 
+z
+" transform="scale(0.015625)"/>
+       <path id="PingFangSC-Regular-485" d="M 1190 762 
+C 1062 762 966 730 890 653 
+C 813 582 774 486 774 365 
+C 774 256 813 160 890 83 
+C 966 6 1056 -32 1165 -32 
+C 1229 -32 1280 -19 1306 -6 
+C 1306 -160 1254 -301 1165 -435 
+C 1062 -563 928 -659 762 -717 
+L 762 -1030 
+C 1030 -960 1254 -819 1421 -614 
+C 1587 -397 1670 -147 1670 134 
+C 1670 320 1626 467 1542 582 
+C 1453 704 1331 762 1190 762 
+z
+" transform="scale(0.015625)"/>
+      </defs>
+      <use xlink:href="#PingFangSC-Regular-734"/>
+      <use xlink:href="#PingFangSC-Regular-15bd" transform="translate(100 0)"/>
+      <use xlink:href="#PingFangSC-Regular-1232" transform="translate(200 0)"/>
+      <use xlink:href="#PingFangSC-Regular-481" transform="translate(300 0)"/>
+      <use xlink:href="#PingFangSC-Regular-35" transform="translate(400 0)"/>
+      <use xlink:href="#PingFangSC-Regular-3a" transform="translate(467.59375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-15" transform="translate(560.59375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-3" transform="translate(620.59375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-dc8" transform="translate(653.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-56f" transform="translate(753.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-95f" transform="translate(853.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-a5c" transform="translate(953.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-3" transform="translate(1053.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-ba" transform="translate(1087.1875 0)"/>
+      <use xlink:href="#PingFangSC-Regular-3" transform="translate(1147.6875 0)"/>
+      <use xlink:href="#PingFangSC-Regular-11" transform="translate(1180.984375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-55" transform="translate(1207.390625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-56" transform="translate(1243.890625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-54" transform="translate(1294.390625 0)"/>
+      <use xlink:href="#PingFangSC-Regular-3" transform="translate(1352.984375 0)"/>
+      <use xlink:href="#PingFangSC-Regular-95f" transform="translate(1386.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-a5c" transform="translate(1486.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-485" transform="translate(1586.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-a52" transform="translate(1686.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-dc4" transform="translate(1786.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-6b0" transform="translate(1886.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-b36" transform="translate(1986.28125 0)"/>
+      <use xlink:href="#PingFangSC-Regular-482" transform="translate(2086.28125 0)"/>
+     </g>
+    </g>
+   </g>
+   <g id="line2d_30">
+    <path d="M 191.107343 329.472 
+L 191.107343 37.44 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke-dasharray: 3.6,3.6; stroke-dashoffset: 0; stroke: #e6e5e1; stroke-width: 1.2"/>
+   </g>
+   <g id="line2d_31">
+    <path d="M 84.122294 303.081519 
+L 166.857229 300.640572 
+L 216.160799 300.447873 
+L 232.033003 302.851132 
+L 263.777412 303.908734 
+L 281.336573 306.194388 
+L 297.208777 303.312443 
+L 330.640143 309.162794 
+L 346.512347 313.899566 
+L 411.688121 317.264297 
+L 527.854422 311.862269 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #2a78d6; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_32">
+    <path d="M 84.122294 227.528743 
+L 166.857229 206.67217 
+L 216.160799 267.14446 
+L 232.033003 262.0529 
+L 263.777412 260.583733 
+L 281.336573 254.109161 
+L 297.208777 258.462062 
+L 330.640143 255.037526 
+L 346.512347 258.043132 
+L 411.688121 239.356386 
+L 527.854422 240.750576 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #eb6834; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_33">
+    <path d="M 84.122294 164.312932 
+L 166.857229 63.168033 
+L 216.160799 197.826285 
+L 232.033003 193.530652 
+L 263.777412 190.40066 
+L 281.336573 188.519407 
+L 297.208777 194.515682 
+L 330.640143 196.336236 
+L 346.512347 193.519762 
+L 411.688121 172.145457 
+L 527.854422 192.469099 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #eda100; stroke-width: 2; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 58.752 329.472 
+L 539.136 329.472 
+" style="fill: none; stroke: #e6e5e1; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_20">
+    <!-- lossless 无损  1.4× -->
+    <g style="fill: #0b0b0b" transform="translate(539.854422 315.822269) scale(0.11 -0.11)">
+     <defs>
+      <path id="PingFangSC-Regular-4f" d="M 499 4659 
+L 499 0 
+L 1005 0 
+L 1005 4659 
+L 499 4659 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-52" d="M 1875 3398 
+C 1376 3398 986 3232 691 2886 
+C 410 2560 269 2150 269 1651 
+C 269 1158 410 749 691 429 
+C 986 83 1376 -90 1875 -90 
+C 2368 -90 2765 83 3066 429 
+C 3341 749 3482 1158 3482 1651 
+C 3482 2150 3341 2560 3059 2886 
+C 2765 3232 2368 3398 1875 3398 
+z
+M 1875 2970 
+C 2221 2970 2496 2835 2701 2566 
+C 2874 2323 2963 2022 2963 1651 
+C 2963 1293 2874 986 2701 742 
+C 2496 474 2221 339 1875 339 
+C 1523 339 1248 474 1056 742 
+C 877 986 794 1286 794 1651 
+C 794 2022 877 2323 1056 2566 
+C 1248 2835 1523 2970 1875 2970 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-48" d="M 1760 3398 
+C 1280 3398 902 3226 621 2880 
+C 339 2554 205 2144 205 1658 
+C 205 1120 346 698 640 378 
+C 922 70 1306 -90 1779 -90 
+C 2208 -90 2560 38 2835 282 
+C 3059 486 3206 742 3283 1062 
+L 2771 1062 
+C 2688 832 2579 659 2438 544 
+C 2272 410 2048 339 1779 339 
+C 1466 339 1216 442 1037 646 
+C 858 851 762 1139 736 1510 
+L 3347 1510 
+C 3334 2086 3206 2541 2963 2861 
+C 2694 3219 2291 3398 1760 3398 
+z
+M 1773 2970 
+C 2400 2970 2752 2618 2816 1907 
+L 749 1907 
+C 781 2234 883 2490 1062 2682 
+C 1242 2874 1478 2970 1773 2970 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-deb" d="M 851 4883 
+L 851 4435 
+L 2688 4435 
+L 2688 4006 
+C 2682 3610 2656 3232 2605 2886 
+L 422 2886 
+L 422 2445 
+L 2528 2445 
+C 2445 2042 2330 1677 2176 1357 
+C 1830 704 1222 186 339 -211 
+L 595 -621 
+C 1485 -237 2125 307 2522 998 
+C 2739 1408 2899 1888 3002 2445 
+L 3520 2445 
+L 3520 115 
+C 3520 -320 3725 -538 4147 -538 
+L 5184 -538 
+C 5453 -538 5645 -480 5766 -365 
+C 5907 -224 6003 154 6054 781 
+L 5619 922 
+C 5587 422 5530 128 5440 26 
+C 5370 -58 5254 -102 5101 -102 
+L 4288 -102 
+C 4083 -102 3981 6 3981 211 
+L 3981 2445 
+L 5965 2445 
+L 5965 2886 
+L 3072 2886 
+C 3117 3232 3142 3610 3155 4006 
+L 3155 4435 
+L 5446 4435 
+L 5446 4883 
+L 851 4883 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-d16" d="M 5805 3085 
+L 2694 3085 
+L 2694 646 
+L 3142 646 
+L 3142 2675 
+L 5357 2675 
+L 5357 653 
+L 5805 653 
+L 5805 3085 
+z
+M 2906 4986 
+L 2906 3546 
+L 5613 3546 
+L 5613 4986 
+L 2906 4986 
+z
+M 5165 3930 
+L 3354 3930 
+L 3354 4589 
+L 5165 4589 
+L 5165 3930 
+z
+M 4006 2317 
+L 4006 1645 
+C 3994 1158 3866 768 3622 461 
+C 3360 166 2899 -64 2240 -243 
+L 2490 -634 
+C 3174 -442 3667 -173 3974 166 
+C 4282 538 4448 1030 4467 1645 
+L 4467 2317 
+L 4006 2317 
+z
+M 1088 -570 
+C 1466 -570 1658 -378 1658 0 
+L 1658 1875 
+C 1901 1984 2144 2106 2387 2234 
+L 2387 2701 
+C 2150 2573 1907 2451 1658 2336 
+L 1658 3610 
+L 2419 3610 
+L 2419 4051 
+L 1658 4051 
+L 1658 5222 
+L 1203 5222 
+L 1203 4051 
+L 346 4051 
+L 346 3610 
+L 1203 3610 
+L 1203 2150 
+C 890 2029 563 1926 230 1843 
+L 346 1382 
+C 634 1472 922 1574 1203 1683 
+L 1203 115 
+C 1203 -64 1107 -160 928 -160 
+C 755 -160 576 -147 390 -128 
+L 486 -570 
+L 1088 -570 
+z
+M 4653 653 
+L 4422 307 
+C 4915 77 5395 -243 5862 -646 
+L 6118 -256 
+C 5677 102 5190 403 4653 653 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-4f"/>
+     <use xlink:href="#PingFangSC-Regular-52" transform="translate(23.5 0)"/>
+     <use xlink:href="#PingFangSC-Regular-56" transform="translate(82.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-56" transform="translate(132.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-4f" transform="translate(183.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-48" transform="translate(206.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-56" transform="translate(262.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-56" transform="translate(312.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(363.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-deb" transform="translate(396.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-d16" transform="translate(496.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(596.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(629.6875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-14" transform="translate(662.984375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-11" transform="translate(703.078125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-17" transform="translate(729.484375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-9a" transform="translate(789.484375 0)"/>
+    </g>
+   </g>
+   <g id="text_21">
+    <!-- high  2.8× -->
+    <g style="fill: #0b0b0b" transform="translate(539.854422 244.314404) scale(0.11 -0.11)">
+     <defs>
+      <path id="PingFangSC-Regular-4b" d="M 397 4659 
+L 397 0 
+L 909 0 
+L 909 1888 
+C 909 2195 992 2458 1165 2662 
+C 1331 2867 1542 2970 1798 2970 
+C 2074 2970 2285 2886 2438 2720 
+C 2579 2554 2656 2317 2656 2010 
+L 2656 0 
+L 3168 0 
+L 3168 2086 
+C 3168 2509 3066 2835 2861 3059 
+C 2656 3290 2355 3398 1971 3398 
+C 1747 3398 1549 3347 1370 3245 
+C 1178 3136 1024 2976 909 2765 
+L 909 4659 
+L 397 4659 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-4c" d="M 819 4557 
+C 710 4557 621 4525 544 4448 
+C 467 4384 435 4294 435 4179 
+C 435 4070 467 3981 544 3904 
+C 621 3834 710 3795 819 3795 
+C 928 3795 1018 3834 1094 3904 
+C 1171 3981 1210 4070 1210 4179 
+C 1210 4294 1171 4384 1094 4448 
+C 1018 4525 928 4557 819 4557 
+z
+M 563 3309 
+L 563 0 
+L 1075 0 
+L 1075 3309 
+L 563 3309 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-4a" d="M 1760 3398 
+C 1299 3398 934 3238 666 2912 
+C 397 2605 269 2214 269 1728 
+C 269 1248 397 858 666 550 
+C 934 237 1299 77 1760 77 
+C 2259 77 2630 301 2874 742 
+L 2874 160 
+C 2874 -570 2541 -941 1875 -941 
+C 1574 -941 1350 -883 1203 -774 
+C 1056 -672 960 -506 922 -282 
+L 410 -282 
+C 467 -640 614 -909 851 -1088 
+C 1082 -1267 1427 -1357 1875 -1357 
+C 2880 -1357 3386 -826 3386 230 
+L 3386 3309 
+L 2874 3309 
+L 2874 2739 
+C 2630 3181 2259 3398 1760 3398 
+z
+M 1837 2976 
+C 2163 2976 2419 2861 2611 2618 
+C 2790 2400 2880 2099 2880 1728 
+C 2880 1370 2790 1075 2611 851 
+C 2419 621 2163 506 1830 506 
+C 1472 506 1210 634 1030 877 
+C 870 1094 794 1382 794 1728 
+C 794 2099 883 2400 1062 2618 
+C 1248 2861 1504 2976 1837 2976 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-1b" d="M 1920 4659 
+C 1440 4659 1069 4538 800 4288 
+C 550 4064 429 3782 429 3450 
+C 429 3206 486 3002 602 2835 
+C 723 2656 902 2522 1146 2438 
+L 1146 2426 
+C 902 2368 704 2234 538 2029 
+C 358 1811 269 1555 269 1261 
+C 269 858 410 531 691 288 
+C 979 38 1389 -90 1920 -90 
+C 2445 -90 2854 38 3149 288 
+C 3430 531 3571 858 3571 1261 
+C 3571 1555 3482 1811 3302 2029 
+C 3136 2234 2931 2368 2694 2426 
+L 2694 2438 
+C 2931 2522 3110 2656 3238 2835 
+C 3354 3002 3411 3206 3411 3450 
+C 3411 3782 3283 4064 3040 4288 
+C 2771 4538 2394 4659 1920 4659 
+z
+M 1920 4230 
+C 2240 4230 2496 4147 2682 3981 
+C 2835 3840 2918 3654 2918 3430 
+C 2918 3200 2848 3008 2707 2867 
+C 2534 2701 2272 2611 1920 2611 
+C 1562 2611 1299 2701 1133 2867 
+C 992 3008 922 3200 922 3430 
+C 922 3654 998 3840 1158 3981 
+C 1338 4147 1594 4230 1920 4230 
+z
+M 1920 2202 
+C 2285 2202 2573 2112 2778 1926 
+C 2957 1760 3053 1536 3053 1261 
+C 3053 992 2957 774 2778 608 
+C 2573 429 2291 339 1920 339 
+C 1549 339 1261 429 1069 602 
+C 877 768 787 992 787 1261 
+C 787 1536 877 1760 1069 1926 
+C 1267 2112 1549 2202 1920 2202 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-4b"/>
+     <use xlink:href="#PingFangSC-Regular-4c" transform="translate(55.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-4a" transform="translate(81.1875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-4b" transform="translate(140.28125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(195.875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(229.171875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-15" transform="translate(262.46875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-11" transform="translate(322.46875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1b" transform="translate(348.875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-9a" transform="translate(408.875 0)"/>
+    </g>
+   </g>
+   <g id="line2d_34">
+    <path d="M 84.122294 189.706707 
+L 166.857229 114.699598 
+L 216.160799 233.087117 
+L 232.033003 229.045144 
+L 263.777412 226.611675 
+L 281.336573 223.762458 
+L 297.208777 228.021344 
+L 330.640143 228.206703 
+L 346.512347 228.284039 
+L 411.688121 208.530222 
+L 527.854422 217.685368 
+" clip-path="url(#p23c6151166)" style="fill: none; stroke: #1baf7a; stroke-width: 3.2; stroke-linecap: round"/>
+   </g>
+   <g id="text_22">
+    <!-- vl（默认）  3.6× -->
+    <g style="fill: #0b0b0b" transform="translate(539.854422 221.645368) scale(0.11 -0.11)">
+     <defs>
+      <path id="PingFangSC-Semibold-59" d="M 32 3309 
+L 1254 0 
+L 1984 0 
+L 3206 3309 
+L 2413 3309 
+L 1619 909 
+L 826 3309 
+L 32 3309 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-4f" d="M 448 4659 
+L 448 0 
+L 1178 0 
+L 1178 4659 
+L 448 4659 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-481" d="M 5280 5293 
+C 4973 4877 4742 4442 4576 3981 
+C 4378 3443 4282 2886 4282 2298 
+C 4282 1722 4378 1158 4576 621 
+C 4742 173 4973 -262 5280 -685 
+L 5888 -685 
+C 5619 -237 5414 205 5274 640 
+C 5082 1197 4992 1754 4992 2304 
+C 4992 2861 5082 3418 5274 3968 
+C 5414 4410 5619 4851 5888 5293 
+L 5280 5293 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-1f15" d="M 3334 1453 
+C 3002 1427 2598 1408 2125 1382 
+L 2125 1747 
+L 3238 1747 
+L 3238 2272 
+L 2125 2272 
+L 2125 2650 
+L 3302 2650 
+L 3302 5062 
+L 390 5062 
+L 390 2650 
+L 1536 2650 
+L 1536 2272 
+L 435 2272 
+L 435 1747 
+L 1536 1747 
+L 1536 1363 
+C 1171 1350 774 1344 346 1338 
+L 429 787 
+C 1805 838 2771 890 3334 947 
+L 3334 1453 
+z
+M 474 627 
+C 442 192 371 -198 256 -538 
+L 794 -717 
+C 909 -346 986 83 1018 563 
+L 474 627 
+z
+M 1690 570 
+L 1190 512 
+C 1229 243 1261 -134 1274 -621 
+L 1824 -550 
+C 1798 -77 1754 301 1690 570 
+z
+M 3091 723 
+L 2643 595 
+C 2771 262 2886 -83 2976 -442 
+L 3354 -294 
+L 3725 -710 
+C 4154 -58 4480 749 4698 1715 
+C 4902 774 5254 -32 5741 -704 
+L 6208 -192 
+C 5587 557 5171 1606 4960 2957 
+L 5984 2957 
+L 5984 3590 
+L 4934 3590 
+C 4934 4243 4941 4787 4941 5235 
+L 4294 5235 
+C 4294 4851 4288 4307 4275 3590 
+L 3526 3590 
+L 3526 2957 
+L 4243 2957 
+C 4160 1837 3878 832 3392 -58 
+C 3315 186 3213 442 3091 723 
+z
+M 2394 653 
+L 1926 499 
+C 2016 173 2099 -166 2163 -518 
+L 2688 -384 
+C 2598 6 2502 352 2394 653 
+z
+M 5485 5075 
+L 5030 4794 
+C 5274 4429 5472 4096 5613 3795 
+L 6074 4122 
+C 5933 4397 5741 4717 5485 5075 
+z
+M 2778 3149 
+L 2074 3149 
+L 2074 4563 
+L 2778 4563 
+L 2778 3149 
+z
+M 1613 3149 
+L 915 3149 
+L 915 4563 
+L 1613 4563 
+L 1613 3149 
+z
+M 2342 4301 
+C 2310 3994 2253 3706 2170 3437 
+L 2483 3328 
+C 2573 3616 2637 3910 2669 4218 
+L 2342 4301 
+z
+M 1293 4288 
+L 979 4186 
+C 1069 3910 1146 3622 1210 3328 
+L 1517 3411 
+C 1453 3744 1382 4032 1293 4288 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-198a" d="M 3910 5210 
+C 3904 3981 3814 2989 3642 2221 
+C 3424 1312 2950 544 2221 -83 
+L 2675 -640 
+C 3533 83 4077 992 4301 2086 
+C 4314 2138 4320 2195 4333 2253 
+C 4678 1133 5152 173 5760 -621 
+L 6246 -64 
+C 5427 864 4851 2106 4531 3661 
+C 4570 4134 4589 4653 4589 5210 
+L 3910 5210 
+z
+M 1139 5216 
+L 666 4755 
+C 1120 4422 1472 4109 1715 3814 
+L 2176 4282 
+C 1888 4589 1542 4902 1139 5216 
+z
+M 250 3366 
+L 250 2726 
+L 1126 2726 
+L 1126 518 
+C 1126 378 1069 256 954 166 
+L 1210 -429 
+C 1683 -122 2125 218 2541 602 
+L 2362 1286 
+C 2157 1088 1958 909 1773 755 
+L 1773 3366 
+L 250 3366 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-482" d="M 512 5293 
+C 774 4851 979 4410 1126 3968 
+C 1312 3418 1408 2861 1408 2304 
+C 1408 1754 1312 1197 1126 640 
+C 979 205 774 -237 512 -685 
+L 1120 -685 
+C 1421 -262 1658 173 1824 621 
+C 2016 1158 2118 1722 2118 2298 
+C 2118 2886 2016 3443 1824 3981 
+C 1658 4442 1421 4877 1120 5293 
+L 512 5293 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-3" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-16" d="M 1965 4659 
+C 1517 4659 1146 4538 858 4282 
+C 550 4026 384 3667 346 3206 
+L 1082 3206 
+C 1107 3482 1197 3686 1350 3821 
+C 1498 3955 1702 4019 1971 4019 
+C 2234 4019 2432 3962 2566 3846 
+C 2688 3731 2752 3565 2752 3341 
+C 2752 3117 2682 2944 2547 2829 
+C 2406 2714 2202 2656 1933 2656 
+L 1613 2656 
+L 1613 2093 
+L 1933 2093 
+C 2227 2093 2451 2035 2605 1907 
+C 2758 1786 2842 1594 2842 1331 
+C 2842 1114 2765 934 2618 787 
+C 2451 627 2221 544 1933 544 
+C 1670 544 1459 621 1299 768 
+C 1120 928 1030 1158 1018 1453 
+L 256 1453 
+C 294 941 474 544 794 275 
+C 1082 32 1466 -90 1939 -90 
+C 2438 -90 2842 51 3149 326 
+C 3443 595 3590 941 3590 1363 
+C 3590 1632 3514 1856 3360 2029 
+C 3219 2195 3008 2317 2739 2400 
+C 3245 2566 3501 2899 3501 3398 
+C 3501 3795 3360 4102 3085 4326 
+C 2803 4550 2426 4659 1965 4659 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-11" d="M 877 966 
+C 736 966 614 922 525 819 
+C 422 723 378 602 378 461 
+C 378 320 422 205 525 102 
+C 614 13 736 -38 877 -38 
+C 1018 -38 1133 13 1235 102 
+C 1331 205 1382 320 1382 461 
+C 1382 602 1331 723 1235 819 
+C 1133 922 1018 966 877 966 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-19" d="M 1984 4659 
+C 1453 4659 1030 4429 723 3968 
+C 410 3507 256 2906 256 2157 
+C 256 1459 397 915 691 518 
+C 986 115 1414 -90 1978 -90 
+C 2432 -90 2816 64 3123 358 
+C 3430 653 3590 1030 3590 1491 
+C 3590 1939 3456 2310 3187 2598 
+C 2918 2886 2560 3027 2112 3027 
+C 1882 3027 1677 2989 1498 2899 
+C 1306 2810 1146 2675 1018 2483 
+L 986 2483 
+L 986 2541 
+C 986 2963 1069 3315 1248 3597 
+C 1427 3898 1670 4045 1978 4045 
+C 2413 4045 2682 3834 2771 3411 
+L 3501 3411 
+C 3386 4243 2880 4659 1984 4659 
+z
+M 1952 2419 
+C 2227 2419 2445 2336 2611 2163 
+C 2765 1997 2848 1773 2848 1491 
+C 2848 1210 2765 979 2598 800 
+C 2432 621 2221 531 1952 531 
+C 1690 531 1478 614 1312 781 
+C 1146 947 1062 1178 1062 1466 
+C 1062 1760 1139 1997 1299 2163 
+C 1453 2336 1670 2419 1952 2419 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Semibold-9a" d="M 730 3283 
+L 307 2861 
+L 1517 1658 
+L 307 448 
+L 730 26 
+L 1939 1235 
+L 3142 26 
+L 3565 448 
+L 2362 1658 
+L 3565 2861 
+L 3142 3283 
+L 1939 2080 
+L 730 3283 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Semibold-59"/>
+     <use xlink:href="#PingFangSC-Semibold-4f" transform="translate(50.59375 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-481" transform="translate(76 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-1f15" transform="translate(176 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-198a" transform="translate(276 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-482" transform="translate(376 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-3" transform="translate(476 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-3" transform="translate(509.296875 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-16" transform="translate(542.59375 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-11" transform="translate(602.59375 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-19" transform="translate(630.09375 0)"/>
+     <use xlink:href="#PingFangSC-Semibold-9a" transform="translate(690.09375 0)"/>
+    </g>
+   </g>
+   <g id="text_23">
+    <!-- compact  4.6× -->
+    <g style="fill: #0b0b0b" transform="translate(539.854422 196.110271) scale(0.11 -0.11)">
+     <defs>
+      <path id="PingFangSC-Regular-46" d="M 1824 3398 
+C 1331 3398 941 3226 659 2874 
+C 397 2554 269 2144 269 1638 
+C 269 1133 397 723 659 410 
+C 934 77 1318 -90 1818 -90 
+C 2227 -90 2554 19 2803 230 
+C 3059 448 3219 774 3296 1197 
+L 2784 1197 
+C 2707 627 2381 339 1818 339 
+C 1485 339 1229 461 1056 691 
+C 877 922 794 1242 794 1645 
+C 794 2048 883 2368 1062 2605 
+C 1248 2848 1504 2970 1824 2970 
+C 2086 2970 2298 2912 2464 2784 
+C 2624 2656 2726 2464 2771 2208 
+L 3277 2208 
+C 3219 2611 3066 2912 2810 3110 
+C 2560 3302 2234 3398 1824 3398 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-50" d="M 1843 3398 
+C 1472 3398 1158 3226 909 2867 
+L 909 3309 
+L 397 3309 
+L 397 0 
+L 909 0 
+L 909 2016 
+C 909 2278 986 2502 1139 2682 
+C 1293 2874 1485 2963 1722 2963 
+C 2227 2963 2483 2675 2483 2086 
+L 2483 0 
+L 2995 0 
+L 2995 2074 
+C 2995 2342 3066 2554 3219 2720 
+C 3360 2886 3546 2963 3763 2963 
+C 4045 2963 4250 2893 4378 2739 
+C 4499 2598 4563 2381 4563 2086 
+L 4563 0 
+L 5075 0 
+L 5075 2170 
+C 5075 2547 4966 2848 4762 3072 
+C 4544 3290 4269 3398 3923 3398 
+C 3693 3398 3501 3347 3341 3245 
+C 3162 3149 3008 2989 2880 2771 
+C 2694 3194 2349 3398 1843 3398 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-53" d="M 1978 3398 
+C 1478 3398 1114 3187 877 2765 
+L 877 3309 
+L 397 3309 
+L 397 -1267 
+L 909 -1267 
+L 909 602 
+C 1165 141 1530 -90 2003 -90 
+C 2477 -90 2842 90 3110 435 
+C 3354 755 3482 1158 3482 1645 
+C 3482 2144 3354 2547 3104 2867 
+C 2829 3226 2451 3398 1978 3398 
+z
+M 1914 2976 
+C 2266 2976 2534 2848 2720 2579 
+C 2874 2349 2957 2035 2957 1645 
+C 2957 1248 2874 934 2707 704 
+C 2522 461 2253 333 1894 333 
+C 1587 333 1350 454 1171 685 
+C 979 922 890 1229 890 1613 
+L 890 1677 
+C 890 2048 973 2355 1139 2586 
+C 1318 2848 1581 2976 1914 2976 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-44" d="M 1837 3398 
+C 1440 3398 1126 3322 883 3168 
+C 614 3002 442 2739 371 2394 
+L 877 2355 
+C 928 2566 1037 2726 1210 2829 
+C 1363 2931 1562 2976 1805 2976 
+C 2381 2976 2669 2701 2669 2144 
+L 2669 1971 
+L 1875 1958 
+C 1376 1952 992 1856 723 1677 
+C 416 1485 269 1203 269 826 
+C 269 557 371 333 576 160 
+C 774 -6 1037 -90 1370 -90 
+C 1677 -90 1952 -19 2195 115 
+C 2400 230 2573 378 2701 557 
+L 2701 0 
+L 3181 0 
+L 3181 2125 
+C 3181 2509 3078 2810 2886 3027 
+C 2656 3277 2310 3398 1837 3398 
+z
+M 2669 1587 
+L 2669 1306 
+C 2669 1050 2547 819 2310 621 
+C 2067 416 1792 314 1478 314 
+C 1274 314 1107 365 979 461 
+C 851 563 794 685 794 838 
+C 794 1318 1165 1562 1907 1574 
+L 2669 1587 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-57" d="M 1280 4378 
+L 774 4166 
+L 774 3309 
+L 109 3309 
+L 109 2880 
+L 774 2880 
+L 774 774 
+C 774 525 826 339 934 211 
+C 1050 70 1248 0 1517 0 
+L 2016 0 
+L 2016 429 
+L 1594 429 
+C 1478 429 1395 461 1350 512 
+C 1299 563 1280 653 1280 774 
+L 1280 2880 
+L 2099 2880 
+L 2099 3309 
+L 1280 3309 
+L 1280 4378 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-46"/>
+     <use xlink:href="#PingFangSC-Regular-52" transform="translate(54.703125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-50" transform="translate(113.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-53" transform="translate(198.796875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-44" transform="translate(257.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-46" transform="translate(313.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-57" transform="translate(368 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(403.5 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(436.796875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-17" transform="translate(470.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-11" transform="translate(530.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-19" transform="translate(556.5 0)"/>
+     <use xlink:href="#PingFangSC-Regular-9a" transform="translate(616.5 0)"/>
+    </g>
+   </g>
+   <g id="text_24">
+    <!-- half3 引擎 -->
+    <g style="fill: #52514e" transform="translate(107.661668 262.052974) scale(0.095 -0.095)">
+     <defs>
+      <path id="PingFangSC-Regular-49" d="M 1722 4570 
+C 1440 4570 1222 4493 1075 4333 
+C 934 4179 864 3968 864 3686 
+L 864 3309 
+L 32 3309 
+L 32 2880 
+L 864 2880 
+L 864 0 
+L 1376 0 
+L 1376 2880 
+L 2310 2880 
+L 2310 3309 
+L 1376 3309 
+L 1376 3674 
+C 1376 3834 1408 3949 1472 4019 
+C 1536 4096 1645 4128 1786 4128 
+L 2355 4128 
+L 2355 4570 
+L 1722 4570 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-b5a" d="M 4947 5229 
+L 4947 -646 
+L 5408 -646 
+L 5408 5229 
+L 4947 5229 
+z
+M 1184 3123 
+L 3386 3123 
+L 3386 4973 
+L 602 4973 
+L 602 4550 
+L 2931 4550 
+L 2931 3552 
+L 800 3552 
+L 467 1645 
+L 2989 1645 
+C 2989 896 2950 403 2880 166 
+C 2803 -58 2515 -173 2029 -173 
+C 1824 -173 1619 -160 1414 -147 
+L 1530 -576 
+C 1734 -589 1933 -602 2131 -602 
+C 2829 -576 3226 -384 3315 -26 
+C 3405 307 3450 1005 3450 2061 
+L 960 2061 
+L 1184 3123 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-d9a" d="M 3866 3853 
+C 3981 3590 4154 3347 4390 3123 
+C 4134 2944 3814 2803 3437 2714 
+L 3610 2342 
+C 4045 2451 4410 2624 4717 2861 
+C 5024 2637 5421 2445 5901 2285 
+L 6112 2656 
+C 5677 2790 5306 2950 5011 3142 
+C 5280 3462 5466 3859 5562 4346 
+L 5914 4346 
+L 5914 4730 
+L 4282 4730 
+C 4333 4883 4378 5050 4416 5222 
+L 3994 5280 
+C 3866 4666 3622 4154 3277 3731 
+L 3520 3405 
+C 3648 3546 3763 3693 3866 3853 
+z
+M 4134 4346 
+L 5152 4346 
+C 5075 3974 4915 3648 4678 3379 
+C 4384 3635 4186 3923 4090 4256 
+C 4102 4282 4122 4314 4134 4346 
+z
+M 5158 2291 
+C 4032 2125 2611 2035 896 2035 
+L 1011 1690 
+C 1747 1690 2426 1702 3053 1728 
+L 3053 1325 
+L 870 1325 
+L 870 986 
+L 3053 986 
+L 3053 595 
+L 422 595 
+L 422 211 
+L 3053 211 
+L 3053 -70 
+C 3053 -224 2970 -301 2810 -301 
+C 2579 -301 2342 -288 2093 -275 
+L 2182 -672 
+L 2950 -672 
+C 3309 -672 3494 -506 3494 -173 
+L 3494 211 
+L 5990 211 
+L 5990 595 
+L 3494 595 
+L 3494 986 
+L 5472 986 
+L 5472 1325 
+L 3494 1325 
+L 3494 1747 
+C 4198 1786 4826 1843 5370 1920 
+L 5158 2291 
+z
+M 1235 5248 
+L 1235 4979 
+L 429 4979 
+L 429 4621 
+L 1235 4621 
+L 1235 4384 
+L 896 4442 
+C 787 4038 582 3712 282 3469 
+L 531 3168 
+C 621 3245 704 3328 794 3418 
+L 794 2547 
+L 1990 2547 
+L 2074 2285 
+L 2310 2285 
+C 2643 2285 2854 2310 2950 2362 
+C 3053 2413 3117 2502 3155 2643 
+C 3187 2790 3213 3277 3232 4109 
+L 1190 4109 
+C 1210 4173 1229 4237 1254 4301 
+L 1619 4301 
+L 1619 4621 
+L 2317 4621 
+L 2317 4314 
+L 2701 4314 
+L 2701 4621 
+L 3456 4621 
+L 3456 4979 
+L 2701 4979 
+L 2701 5254 
+L 2317 5254 
+L 2317 4979 
+L 1619 4979 
+L 1619 5248 
+L 1235 5248 
+z
+M 2355 2618 
+L 2355 3501 
+L 858 3501 
+C 922 3578 979 3674 1043 3776 
+L 2829 3776 
+C 2816 3277 2803 2976 2790 2874 
+C 2778 2784 2752 2714 2707 2675 
+C 2662 2637 2566 2618 2413 2618 
+L 2355 2618 
+z
+M 1990 2835 
+L 1158 2835 
+L 1158 3206 
+L 1990 3206 
+L 1990 2835 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-4b"/>
+     <use xlink:href="#PingFangSC-Regular-44" transform="translate(55.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-4f" transform="translate(111.5 0)"/>
+     <use xlink:href="#PingFangSC-Regular-49" transform="translate(135 0)"/>
+     <use xlink:href="#PingFangSC-Regular-16" transform="translate(172.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(232.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-b5a" transform="translate(265.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-d9a" transform="translate(365.59375 0)"/>
+    </g>
+    <!-- （低噪声：感知编码） -->
+    <g style="fill: #52514e" transform="translate(82.277371 275.352974) scale(0.095 -0.095)">
+     <defs>
+      <path id="PingFangSC-Regular-597" d="M 2771 2432 
+L 4262 2432 
+C 4294 2106 4339 1811 4397 1549 
+C 4538 864 4723 346 4954 -6 
+C 5178 -346 5389 -518 5587 -518 
+C 5818 -518 5997 -51 6118 870 
+L 5734 1082 
+C 5670 378 5594 26 5510 19 
+C 5427 19 5318 154 5178 422 
+C 5030 710 4902 1139 4800 1709 
+C 4762 1914 4723 2157 4698 2432 
+L 6029 2432 
+L 6029 2874 
+L 4659 2874 
+C 4634 3315 4614 3834 4608 4435 
+C 5043 4538 5414 4640 5734 4749 
+L 5478 5120 
+C 4730 4864 3680 4634 2330 4429 
+L 2330 211 
+C 2330 90 2259 6 2125 -38 
+L 2246 -435 
+C 2694 -288 3091 -147 3424 -13 
+L 3347 390 
+C 3162 301 2970 211 2771 134 
+L 2771 2432 
+z
+M 4166 4339 
+C 4166 3802 4186 3309 4224 2874 
+L 2771 2874 
+L 2771 4083 
+C 3277 4166 3744 4250 4166 4339 
+z
+M 3827 787 
+L 3507 557 
+C 3834 141 4102 -250 4314 -614 
+L 4666 -378 
+C 4467 -38 4186 352 3827 787 
+z
+M 1709 5235 
+C 1402 4250 902 3373 218 2611 
+L 365 2125 
+C 621 2394 851 2669 1069 2963 
+L 1069 -653 
+L 1517 -653 
+L 1517 3661 
+C 1760 4096 1965 4557 2125 5043 
+L 1709 5235 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-891" d="M 2848 5005 
+L 2848 3680 
+L 5363 3680 
+L 5363 5005 
+L 2848 5005 
+z
+M 4934 4045 
+L 3270 4045 
+L 3270 4646 
+L 4934 4646 
+L 4934 4045 
+z
+M 4301 3315 
+L 4301 2035 
+L 5869 2035 
+L 5869 3315 
+L 4301 3315 
+z
+M 5478 2381 
+L 4691 2381 
+L 4691 2970 
+L 5478 2970 
+L 5478 2381 
+z
+M 3878 1894 
+L 3878 1440 
+L 2278 1440 
+L 2278 1018 
+L 3354 1018 
+C 3046 582 2566 218 1914 -77 
+L 2157 -467 
+C 2886 -77 3411 416 3744 1018 
+L 3878 1018 
+L 3878 -653 
+L 4320 -653 
+L 4320 1018 
+L 4461 1018 
+C 4742 480 5216 -13 5888 -461 
+L 6195 -83 
+C 5568 243 5120 608 4845 1018 
+L 5978 1018 
+L 5978 1440 
+L 4320 1440 
+L 4320 1894 
+L 3878 1894 
+z
+M 2342 3315 
+L 2342 2035 
+L 3910 2035 
+L 3910 3315 
+L 2342 3315 
+z
+M 3514 2381 
+L 2739 2381 
+L 2739 2970 
+L 3514 2970 
+L 3514 2381 
+z
+M 1984 4698 
+L 512 4698 
+L 512 147 
+L 941 147 
+L 941 589 
+L 1984 589 
+L 1984 4698 
+z
+M 941 1011 
+L 941 4275 
+L 1555 4275 
+L 1555 1011 
+L 941 1011 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-94d" d="M 435 4710 
+L 435 4288 
+L 2963 4288 
+L 2963 3706 
+L 787 3706 
+L 787 3290 
+L 5626 3290 
+L 5626 3706 
+L 3437 3706 
+L 3437 4288 
+L 5958 4288 
+L 5958 4710 
+L 3437 4710 
+L 3437 5235 
+L 2963 5235 
+L 2963 4710 
+L 435 4710 
+z
+M 3027 2413 
+L 3027 1632 
+L 1402 1632 
+C 1408 1734 1414 1830 1414 1933 
+L 1414 2413 
+L 3027 2413 
+z
+M 3488 1632 
+L 3488 2413 
+L 5050 2413 
+L 5050 1632 
+L 3488 1632 
+z
+M 1363 1222 
+L 5498 1222 
+L 5498 2822 
+L 960 2822 
+L 960 1933 
+C 954 1005 730 250 288 -339 
+L 666 -678 
+C 1037 -128 1267 506 1363 1222 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-493" d="M 1600 3898 
+C 1485 3898 1395 3859 1318 3776 
+C 1242 3706 1210 3616 1210 3501 
+C 1210 3392 1242 3302 1318 3226 
+C 1395 3149 1485 3110 1600 3110 
+C 1709 3110 1805 3149 1882 3226 
+C 1958 3302 1997 3392 1997 3501 
+C 1997 3616 1958 3706 1882 3776 
+C 1805 3859 1709 3898 1600 3898 
+z
+M 1600 1555 
+C 1485 1555 1395 1517 1318 1434 
+C 1242 1363 1210 1274 1210 1158 
+C 1210 1050 1242 960 1318 883 
+C 1395 806 1485 768 1600 768 
+C 1709 768 1805 806 1882 883 
+C 1958 960 1997 1050 1997 1158 
+C 1997 1274 1958 1363 1882 1434 
+C 1805 1517 1709 1555 1600 1555 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-c3d" d="M 1581 3718 
+L 1581 3341 
+L 3686 3341 
+L 3686 3718 
+L 1581 3718 
+z
+M 1754 2931 
+L 1754 1626 
+L 3539 1626 
+L 3539 2931 
+L 1754 2931 
+z
+M 3110 1984 
+L 2189 1984 
+L 2189 2573 
+L 3110 2573 
+L 3110 1984 
+z
+M 5850 4653 
+L 5421 4653 
+C 5357 4864 5286 5056 5216 5222 
+L 4806 5152 
+C 4883 4998 4954 4832 5018 4653 
+L 4320 4653 
+C 4307 4845 4307 5043 4307 5254 
+L 3866 5254 
+C 3866 5050 3866 4845 3878 4653 
+L 838 4653 
+L 838 3392 
+C 819 2650 640 2074 294 1658 
+L 640 1344 
+C 1050 1862 1267 2547 1286 3392 
+L 1286 4230 
+L 3898 4230 
+C 3930 3699 3994 3258 4096 2899 
+C 4173 2637 4262 2400 4365 2195 
+C 4160 1965 3930 1773 3680 1626 
+L 3917 1267 
+C 4147 1408 4371 1587 4582 1811 
+C 4608 1773 4646 1728 4685 1683 
+C 4922 1427 5165 1293 5421 1293 
+C 5690 1293 5920 1632 6112 2304 
+L 5741 2522 
+C 5613 1990 5491 1722 5376 1722 
+C 5235 1722 5082 1837 4915 2061 
+L 4858 2150 
+C 5152 2560 5395 3072 5594 3699 
+L 5235 3885 
+C 5082 3386 4883 2957 4653 2586 
+C 4589 2746 4538 2925 4493 3123 
+C 4416 3411 4365 3782 4339 4230 
+L 5850 4230 
+L 5850 4653 
+z
+M 1037 1222 
+C 883 710 646 243 326 -179 
+L 717 -429 
+C 1037 13 1280 531 1459 1133 
+L 1037 1222 
+z
+M 4038 -538 
+C 4275 -538 4448 -493 4563 -403 
+C 4691 -288 4774 13 4813 512 
+L 4378 659 
+C 4352 288 4301 70 4237 -6 
+C 4179 -70 4083 -102 3955 -102 
+L 2592 -102 
+C 2432 -102 2355 -13 2355 166 
+L 2355 1293 
+L 1888 1293 
+L 1888 70 
+C 1888 -333 2074 -538 2451 -538 
+L 4038 -538 
+z
+M 5248 1088 
+L 4877 858 
+C 5248 442 5536 58 5754 -288 
+L 6118 -26 
+C 5920 294 5632 666 5248 1088 
+z
+M 3200 1402 
+L 2854 1190 
+C 3149 870 3379 576 3546 307 
+L 3891 550 
+C 3731 794 3501 1082 3200 1402 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-13a3" d="M 5824 4550 
+L 3680 4550 
+L 3680 -358 
+L 4122 -358 
+L 4122 64 
+L 5376 64 
+L 5376 -346 
+L 5824 -346 
+L 5824 4550 
+z
+M 4122 493 
+L 4122 4122 
+L 5376 4122 
+L 5376 493 
+L 4122 493 
+z
+M 1261 3930 
+L 1882 3930 
+C 1875 3469 1850 3040 1798 2656 
+L 397 2656 
+L 397 2214 
+L 1734 2214 
+C 1702 2048 1664 1888 1626 1734 
+C 1408 986 960 365 282 -128 
+L 582 -499 
+C 1261 -13 1728 589 1990 1306 
+C 2291 973 2656 506 3091 -109 
+L 3366 314 
+C 2944 838 2522 1312 2112 1728 
+C 2150 1882 2182 2048 2214 2214 
+L 3347 2214 
+L 3347 2656 
+L 2278 2656 
+C 2323 3040 2349 3469 2355 3930 
+L 3290 3930 
+L 3290 4371 
+L 1440 4371 
+C 1530 4614 1613 4877 1690 5152 
+L 1235 5248 
+C 1043 4512 742 3840 320 3226 
+L 723 2970 
+C 922 3264 1101 3584 1261 3930 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-15ab" d="M 1933 717 
+C 1478 486 947 307 346 173 
+L 403 -275 
+C 973 -134 1485 58 1933 294 
+L 1933 717 
+z
+M 1280 5242 
+C 1050 4499 768 3846 448 3270 
+C 397 3187 333 3130 262 3104 
+L 378 2688 
+C 717 2739 1056 2797 1395 2867 
+C 1069 2278 794 1862 563 1619 
+C 506 1568 435 1523 352 1491 
+L 480 1075 
+C 1005 1152 1549 1286 2125 1478 
+L 2125 1888 
+C 1754 1760 1389 1651 1018 1574 
+C 1363 2010 1811 2746 2349 3782 
+L 1946 3930 
+C 1830 3699 1715 3482 1613 3277 
+C 1344 3219 1069 3174 794 3136 
+C 1101 3616 1408 4262 1709 5075 
+L 1280 5242 
+z
+M 5466 -621 
+C 5754 -621 5901 -467 5901 -173 
+L 5901 2400 
+L 2976 2400 
+L 2976 -646 
+L 3354 -646 
+L 3354 781 
+L 3859 781 
+L 3859 -531 
+L 4198 -531 
+L 4198 781 
+L 4666 781 
+L 4666 -531 
+L 5005 -531 
+L 5005 781 
+L 5517 781 
+L 5517 -83 
+C 5517 -211 5459 -275 5344 -275 
+L 5088 -262 
+L 5190 -621 
+L 5466 -621 
+z
+M 3354 1165 
+L 3354 2003 
+L 3859 2003 
+L 3859 1165 
+L 3354 1165 
+z
+M 4198 2003 
+L 4666 2003 
+L 4666 1165 
+L 4198 1165 
+L 4198 2003 
+z
+M 5005 2003 
+L 5517 2003 
+L 5517 1165 
+L 5005 1165 
+L 5005 2003 
+z
+M 5453 4173 
+L 5453 3354 
+L 2957 3354 
+L 2957 4173 
+L 5453 4173 
+z
+M 2957 2957 
+L 5875 2957 
+L 5875 4582 
+L 4435 4582 
+C 4358 4838 4275 5062 4192 5261 
+L 3712 5184 
+C 3814 5005 3904 4800 3987 4582 
+L 2528 4582 
+L 2528 3027 
+C 2522 1651 2266 531 1754 -339 
+L 2086 -634 
+C 2650 365 2938 1562 2957 2957 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-13b1" d="M 2419 2982 
+L 1242 2982 
+C 1408 3430 1530 3910 1619 4422 
+L 2586 4422 
+L 2586 4870 
+L 403 4870 
+L 403 4422 
+L 1184 4422 
+C 1030 3469 710 2618 224 1875 
+L 454 1504 
+C 608 1722 749 1946 877 2176 
+L 877 -429 
+L 1306 -429 
+L 1306 58 
+L 1997 58 
+L 1997 -307 
+L 2419 -307 
+L 2419 2982 
+z
+M 1306 474 
+L 1306 2560 
+L 1997 2560 
+L 1997 474 
+L 1306 474 
+z
+M 3283 4077 
+L 2938 2003 
+L 5523 2003 
+C 5523 979 5472 358 5370 141 
+C 5274 -64 4979 -173 4486 -173 
+C 4371 -173 4173 -160 3891 -134 
+L 4019 -582 
+C 4224 -595 4416 -602 4595 -602 
+C 5158 -602 5523 -480 5702 -250 
+C 5869 -6 5958 883 5958 2432 
+L 5280 2432 
+L 5632 4960 
+L 2880 4960 
+L 2880 4525 
+L 5133 4525 
+L 4813 2432 
+L 3456 2432 
+L 3738 4045 
+L 3283 4077 
+z
+M 2739 1190 
+L 2739 755 
+L 5082 755 
+L 5082 1190 
+L 2739 1190 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-481"/>
+     <use xlink:href="#PingFangSC-Regular-597" transform="translate(100 0)"/>
+     <use xlink:href="#PingFangSC-Regular-891" transform="translate(200 0)"/>
+     <use xlink:href="#PingFangSC-Regular-94d" transform="translate(300 0)"/>
+     <use xlink:href="#PingFangSC-Regular-493" transform="translate(400 0)"/>
+     <use xlink:href="#PingFangSC-Regular-c3d" transform="translate(500 0)"/>
+     <use xlink:href="#PingFangSC-Regular-13a3" transform="translate(600 0)"/>
+     <use xlink:href="#PingFangSC-Regular-15ab" transform="translate(700 0)"/>
+     <use xlink:href="#PingFangSC-Regular-13b1" transform="translate(800 0)"/>
+     <use xlink:href="#PingFangSC-Regular-482" transform="translate(900 0)"/>
+    </g>
+   </g>
+   <g id="text_25">
+    <!-- nlq 引擎（高噪声：按噪声量化 + 无损编码） -->
+    <g style="fill: #52514e" transform="translate(206.662709 57.546254) scale(0.095 -0.095)">
+     <defs>
+      <path id="PingFangSC-Regular-51" d="M 1946 3398 
+C 1728 3398 1530 3347 1350 3245 
+C 1171 3149 1024 3008 909 2822 
+L 909 3309 
+L 397 3309 
+L 397 0 
+L 909 0 
+L 909 1997 
+C 928 2298 1024 2534 1203 2714 
+C 1370 2880 1568 2963 1798 2963 
+C 2374 2963 2669 2643 2669 1997 
+L 2669 0 
+L 3181 0 
+L 3181 2035 
+C 3181 2944 2765 3398 1946 3398 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-1e5b" d="M 3283 5267 
+L 2778 5178 
+C 2854 5030 2931 4870 2995 4691 
+L 371 4691 
+L 371 4269 
+L 6022 4269 
+L 6022 4691 
+L 3488 4691 
+C 3424 4902 3354 5094 3283 5267 
+z
+M 4998 -621 
+C 5466 -621 5702 -416 5702 -13 
+L 5702 2227 
+L 698 2227 
+L 698 -640 
+L 1139 -640 
+L 1139 1824 
+L 5261 1824 
+L 5261 83 
+C 5261 -122 5126 -224 4864 -224 
+L 4352 -205 
+L 4461 -621 
+L 4998 -621 
+z
+M 1414 3853 
+L 1414 2611 
+L 4992 2611 
+L 4992 3853 
+L 1414 3853 
+z
+M 4544 2970 
+L 1862 2970 
+L 1862 3494 
+L 4544 3494 
+L 4544 2970 
+z
+M 1946 1414 
+L 1946 134 
+L 4461 134 
+L 4461 1414 
+L 1946 1414 
+z
+M 4051 480 
+L 2362 480 
+L 2362 1069 
+L 4051 1069 
+L 4051 480 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-cf2" d="M 5920 4499 
+L 4422 4499 
+C 4333 4794 4243 5050 4147 5280 
+L 3680 5203 
+C 3782 4986 3878 4755 3962 4499 
+L 2490 4499 
+L 2490 3213 
+L 2925 3213 
+L 2925 4083 
+L 5478 4083 
+L 5478 3238 
+L 5920 3238 
+L 5920 4499 
+z
+M 3680 3680 
+C 3590 3322 3494 2982 3386 2650 
+L 2336 2650 
+L 2336 2208 
+L 3232 2208 
+C 3091 1850 2938 1510 2765 1190 
+C 3187 966 3584 749 3955 538 
+C 3520 218 2886 -38 2042 -230 
+L 2227 -666 
+C 3226 -429 3942 -115 4390 282 
+C 4966 -58 5446 -365 5830 -646 
+L 6144 -282 
+C 5773 -26 5293 275 4691 608 
+C 5030 1030 5254 1568 5357 2208 
+L 6125 2208 
+L 6125 2650 
+L 3853 2650 
+C 3942 2944 4038 3277 4128 3642 
+L 3680 3680 
+z
+M 4915 2208 
+C 4806 1645 4595 1190 4282 832 
+C 3981 992 3654 1158 3309 1338 
+C 3443 1581 3571 1875 3699 2208 
+L 4915 2208 
+z
+M 1018 -582 
+C 1382 -582 1568 -397 1568 -26 
+L 1568 1824 
+C 1766 1914 1965 2003 2163 2099 
+L 2163 2566 
+C 1965 2464 1766 2368 1568 2278 
+L 1568 3558 
+L 2170 3558 
+L 2170 4000 
+L 1568 4000 
+L 1568 5210 
+L 1094 5210 
+L 1094 4000 
+L 346 4000 
+L 346 3558 
+L 1094 3558 
+L 1094 2093 
+C 813 1990 518 1901 218 1830 
+L 333 1370 
+C 582 1446 838 1536 1094 1632 
+L 1094 90 
+C 1094 -77 1011 -160 858 -160 
+C 704 -160 544 -147 378 -134 
+L 474 -582 
+L 1018 -582 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-1c01" d="M 979 2547 
+L 979 915 
+L 2963 915 
+L 2963 557 
+L 819 557 
+L 819 250 
+L 2963 250 
+L 2963 -128 
+L 339 -128 
+L 339 -486 
+L 6061 -486 
+L 6061 -128 
+L 3424 -128 
+L 3424 250 
+L 5594 250 
+L 5594 557 
+L 3424 557 
+L 3424 915 
+L 5434 915 
+L 5434 2547 
+L 979 2547 
+z
+M 4992 1203 
+L 3424 1203 
+L 3424 1594 
+L 4992 1594 
+L 4992 1203 
+z
+M 2963 1203 
+L 1421 1203 
+L 1421 1594 
+L 2963 1594 
+L 2963 1203 
+z
+M 1421 1862 
+L 1421 2259 
+L 2963 2259 
+L 2963 1862 
+L 1421 1862 
+z
+M 3424 2259 
+L 4992 2259 
+L 4992 1862 
+L 3424 1862 
+L 3424 2259 
+z
+M 1120 5126 
+L 1120 3546 
+L 5299 3546 
+L 5299 5126 
+L 1120 5126 
+z
+M 4851 3821 
+L 1568 3821 
+L 1568 4198 
+L 4851 4198 
+L 4851 3821 
+z
+M 1568 4474 
+L 1568 4845 
+L 4851 4845 
+L 4851 4474 
+L 1568 4474 
+z
+M 333 3213 
+L 333 2867 
+L 6067 2867 
+L 6067 3213 
+L 333 3213 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-6f8" d="M 2221 5274 
+C 1811 4262 1152 3366 243 2586 
+L 390 2106 
+C 730 2387 1043 2688 1331 3002 
+L 1331 -653 
+L 1792 -653 
+L 1792 3565 
+C 2138 4038 2426 4538 2650 5075 
+L 2221 5274 
+z
+M 5171 -538 
+C 5478 -538 5690 -461 5805 -307 
+C 5914 -154 5990 294 6035 1030 
+L 5606 1171 
+C 5581 538 5536 166 5466 64 
+C 5389 -38 5261 -96 5094 -96 
+L 4058 -96 
+C 3840 -96 3738 6 3738 205 
+L 3738 2368 
+C 4531 2867 5229 3437 5824 4077 
+L 5504 4442 
+C 4998 3872 4410 3360 3738 2912 
+L 3738 5197 
+L 3277 5197 
+L 3277 2630 
+C 2950 2438 2605 2266 2246 2099 
+L 2451 1664 
+C 2733 1798 3008 1939 3277 2093 
+L 3277 141 
+C 3277 -307 3501 -538 3949 -538 
+L 5171 -538 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-e" d="M 1722 3270 
+L 1722 1875 
+L 320 1875 
+L 320 1440 
+L 1722 1440 
+L 1722 38 
+L 2157 38 
+L 2157 1440 
+L 3552 1440 
+L 3552 1875 
+L 2157 1875 
+L 2157 3270 
+L 1722 3270 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-51"/>
+     <use xlink:href="#PingFangSC-Regular-4f" transform="translate(55.90625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-54" transform="translate(79.40625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(138 0)"/>
+     <use xlink:href="#PingFangSC-Regular-b5a" transform="translate(171.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-d9a" transform="translate(271.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-481" transform="translate(371.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1e5b" transform="translate(471.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-891" transform="translate(571.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-94d" transform="translate(671.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-493" transform="translate(771.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-cf2" transform="translate(871.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-891" transform="translate(971.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-94d" transform="translate(1071.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1c01" transform="translate(1171.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-6f8" transform="translate(1271.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(1371.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-e" transform="translate(1404.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(1465.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-deb" transform="translate(1498.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-d16" transform="translate(1598.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-15ab" transform="translate(1698.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-13b1" transform="translate(1798.390625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-482" transform="translate(1898.390625 0)"/>
+    </g>
+   </g>
+   <g id="text_26">
+    <!-- SNR18 = 60 -->
+    <g style="fill: #52514e" transform="translate(193.897113 318.390628) scale(0.09 -0.09)">
+     <defs>
+      <path id="PingFangSC-Regular-31" d="M 461 4570 
+L 461 0 
+L 986 0 
+L 986 3757 
+L 1005 3757 
+L 3603 0 
+L 4141 0 
+L 4141 4570 
+L 3616 4570 
+L 3616 851 
+L 3597 851 
+L 1011 4570 
+L 461 4570 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-20" d="M 320 2528 
+L 320 2099 
+L 3552 2099 
+L 3552 2528 
+L 320 2528 
+z
+M 320 1216 
+L 320 781 
+L 3552 781 
+L 3552 1216 
+L 320 1216 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-36"/>
+     <use xlink:href="#PingFangSC-Regular-31" transform="translate(63.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-35" transform="translate(135.109375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-14" transform="translate(202.703125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1b" transform="translate(242.796875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(302.796875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-20" transform="translate(336.09375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(396.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-19" transform="translate(429.890625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-13" transform="translate(489.890625 0)"/>
+    </g>
+   </g>
+   <g id="text_27">
+    <!-- 压缩率随 ISO 的变化（13 张样张，Panasonic DC-S9） -->
+    <g style="fill: #0b0b0b" transform="translate(58.752 25.44) scale(0.13 -0.13)">
+     <defs>
+      <path id="PingFangSC-Regular-1d4b" d="M 531 4973 
+L 531 -595 
+L 960 -595 
+L 960 4563 
+L 1715 4563 
+C 1619 4058 1478 3494 1299 2874 
+C 1587 2374 1734 1920 1734 1523 
+C 1734 1382 1709 1286 1670 1229 
+C 1619 1178 1549 1146 1453 1133 
+C 1363 1133 1248 1139 1114 1152 
+L 1248 723 
+C 1606 730 1856 806 2003 954 
+C 2106 1062 2157 1254 2157 1523 
+C 2138 1920 1990 2394 1715 2938 
+C 1882 3526 2022 4090 2138 4627 
+L 2138 4973 
+L 531 4973 
+z
+M 2611 4858 
+L 2272 4646 
+C 2515 4275 2707 3930 2854 3610 
+L 3194 3853 
+C 3059 4134 2867 4474 2611 4858 
+z
+M 4883 -109 
+C 4659 -109 4435 -102 4211 -96 
+C 3974 -83 3770 -38 3603 32 
+C 3411 128 3258 256 3142 416 
+C 3130 429 3110 448 3098 467 
+L 3098 3078 
+L 2125 3078 
+L 2125 2669 
+L 2669 2669 
+L 2669 531 
+C 2445 429 2176 154 1856 -282 
+L 2131 -627 
+C 2490 -115 2733 134 2861 134 
+C 2918 134 2989 90 3066 -6 
+C 3206 -186 3379 -320 3584 -403 
+C 3789 -474 4032 -512 4307 -518 
+C 4486 -525 4672 -531 4851 -531 
+L 6010 -531 
+L 6125 -96 
+C 5734 -102 5318 -109 4883 -109 
+z
+M 3347 4614 
+L 3347 4192 
+L 4128 4192 
+C 3923 3482 3610 2899 3187 2445 
+L 3424 2138 
+C 3590 2291 3744 2477 3891 2688 
+L 3891 269 
+L 4288 269 
+L 4288 1350 
+L 5427 1350 
+L 5427 864 
+C 5427 730 5370 659 5261 659 
+C 5120 659 4979 672 4826 685 
+L 4928 288 
+L 5395 288 
+C 5690 301 5843 448 5843 730 
+L 5843 3552 
+L 4346 3552 
+C 4422 3750 4499 3962 4563 4192 
+L 6093 4192 
+L 6093 4614 
+L 4678 4614 
+C 4717 4794 4755 4973 4794 5165 
+L 4346 5222 
+C 4314 5018 4275 4819 4237 4614 
+L 3347 4614 
+z
+M 4288 2246 
+L 5427 2246 
+L 5427 1722 
+L 4288 1722 
+L 4288 2246 
+z
+M 5427 2618 
+L 4288 2618 
+L 4288 3187 
+L 5427 3187 
+L 5427 2618 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-1331" d="M 2586 4122 
+L 1555 4122 
+C 1683 4442 1779 4794 1856 5171 
+L 1395 5235 
+C 1338 4851 1248 4480 1120 4122 
+L 525 4122 
+L 525 -429 
+L 973 -429 
+L 973 122 
+L 2138 122 
+L 2138 -243 
+L 2586 -243 
+L 2586 4122 
+z
+M 973 550 
+L 973 1952 
+L 2138 1952 
+L 2138 550 
+L 973 550 
+z
+M 973 2368 
+L 973 3686 
+L 2138 3686 
+L 2138 2368 
+L 973 2368 
+z
+M 3699 2637 
+L 3328 2406 
+C 3770 1882 4122 1408 4384 986 
+L 4749 1242 
+C 4506 1638 4160 2106 3699 2637 
+z
+M 5894 4115 
+L 3853 4115 
+C 3968 4448 4058 4806 4134 5184 
+L 3680 5242 
+C 3514 4333 3213 3565 2765 2938 
+L 3040 2573 
+C 3290 2899 3501 3264 3680 3667 
+L 5440 3667 
+C 5427 1824 5402 717 5363 358 
+C 5312 32 5139 -134 4838 -134 
+C 4640 -134 4410 -128 4141 -115 
+L 4250 -538 
+C 4557 -550 4774 -563 4902 -563 
+C 5440 -563 5734 -314 5798 173 
+C 5862 672 5894 1990 5894 4115 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-752" d="M 4890 3866 
+L 4582 3571 
+C 5094 3226 5498 2893 5792 2586 
+L 6112 2906 
+C 5779 3226 5376 3546 4890 3866 
+z
+M 3264 5306 
+L 2765 5229 
+C 2854 5062 2938 4870 3014 4666 
+L 448 4666 
+L 448 4218 
+L 2221 4218 
+L 2221 2490 
+L 2682 2490 
+L 2682 4218 
+L 3725 4218 
+L 3725 2490 
+L 4186 2490 
+L 4186 4218 
+L 5952 4218 
+L 5952 4666 
+L 3482 4666 
+C 3411 4902 3341 5114 3264 5306 
+z
+M 1517 3846 
+C 1184 3501 781 3200 294 2944 
+L 576 2573 
+C 1082 2854 1510 3181 1856 3546 
+L 1517 3846 
+z
+M 883 2150 
+L 883 1741 
+L 1389 1741 
+C 1747 1254 2208 838 2778 480 
+C 2074 179 1267 -38 346 -173 
+L 557 -608 
+C 1581 -435 2483 -160 3251 218 
+C 3987 -154 4883 -429 5939 -608 
+L 6150 -186 
+C 5210 -58 4390 160 3699 461 
+C 4314 826 4832 1274 5254 1798 
+L 5254 2150 
+L 883 2150 
+z
+M 1901 1741 
+L 4634 1741 
+C 4237 1338 3770 986 3219 691 
+C 2688 979 2246 1331 1901 1741 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-b5f" d="M 3046 5222 
+L 3046 2579 
+L 2515 2579 
+L 2515 2131 
+L 3046 2131 
+L 3046 6 
+C 3046 -96 2976 -173 2848 -224 
+L 3053 -640 
+C 3654 -474 4186 -256 4646 13 
+L 4563 454 
+C 4205 237 3846 70 3494 -58 
+L 3494 2131 
+L 4173 2131 
+C 4550 954 5114 64 5856 -550 
+L 6170 -198 
+C 5485 346 4954 1120 4582 2131 
+L 6061 2131 
+L 6061 2579 
+L 3494 2579 
+L 3494 5222 
+L 3046 5222 
+z
+M 5491 4896 
+C 5120 4333 4563 3827 3808 3379 
+L 4077 3021 
+C 4851 3482 5427 3994 5811 4563 
+L 5491 4896 
+z
+M 973 3117 
+L 2157 3117 
+L 2157 4973 
+L 358 4973 
+L 358 4544 
+L 1715 4544 
+L 1715 3546 
+L 563 3546 
+L 365 1677 
+L 1798 1677 
+C 1798 915 1766 416 1715 179 
+C 1651 -51 1434 -173 1062 -173 
+C 883 -173 710 -160 544 -147 
+L 659 -570 
+C 826 -582 998 -595 1165 -595 
+C 1741 -570 2067 -378 2144 -13 
+C 2214 326 2253 1030 2253 2093 
+L 851 2093 
+L 973 3117 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-ecf" d="M 4026 3635 
+L 4026 2694 
+L 2778 2694 
+L 2778 2259 
+L 4026 2259 
+L 4026 1293 
+L 2432 1293 
+L 2432 851 
+L 4026 851 
+L 4026 -659 
+L 4486 -659 
+L 4486 851 
+L 6112 851 
+L 6112 1293 
+L 4486 1293 
+L 4486 2259 
+L 5754 2259 
+L 5754 2694 
+L 4486 2694 
+L 4486 3635 
+L 5946 3635 
+L 5946 4070 
+L 5005 4070 
+C 5190 4365 5363 4704 5517 5088 
+L 5075 5242 
+C 4922 4826 4749 4435 4550 4070 
+L 3546 4070 
+L 3910 4250 
+C 3731 4595 3546 4915 3354 5210 
+L 2970 5030 
+C 3162 4749 3347 4429 3526 4070 
+L 2579 4070 
+L 2579 3635 
+L 4026 3635 
+z
+M 1677 2618 
+C 1843 2400 2029 2125 2246 1786 
+L 2496 2157 
+C 2214 2515 1946 2842 1677 3130 
+L 1677 3533 
+L 2317 3533 
+L 2317 3974 
+L 1677 3974 
+L 1677 5222 
+L 1235 5222 
+L 1235 3974 
+L 435 3974 
+L 435 3533 
+L 1203 3533 
+C 1005 2733 678 2029 230 1414 
+L 467 1030 
+C 781 1510 1037 2042 1235 2624 
+L 1235 -646 
+L 1677 -646 
+L 1677 2618 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-33" d="M 461 4570 
+L 461 0 
+L 986 0 
+L 986 1869 
+L 2323 1869 
+C 3373 1869 3904 2323 3904 3226 
+C 3904 4122 3379 4570 2330 4570 
+L 461 4570 
+z
+M 986 4115 
+L 2298 4115 
+C 2662 4115 2931 4045 3110 3891 
+C 3290 3757 3379 3533 3379 3226 
+C 3379 2918 3290 2694 3117 2547 
+C 2938 2400 2669 2323 2298 2323 
+L 986 2323 
+L 986 4115 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-27" d="M 461 4570 
+L 461 0 
+L 2048 0 
+C 2765 0 3315 211 3699 627 
+C 4064 1024 4250 1581 4250 2285 
+C 4250 3002 4077 3558 3738 3942 
+C 3366 4365 2822 4570 2099 4570 
+L 461 4570 
+z
+M 986 4115 
+L 2016 4115 
+C 2618 4115 3053 3962 3334 3648 
+C 3597 3354 3731 2899 3731 2285 
+C 3731 1690 3584 1235 3302 928 
+C 3002 614 2554 454 1958 454 
+L 986 454 
+L 986 4115 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-26" d="M 2432 4659 
+C 1728 4659 1178 4422 794 3936 
+C 442 3501 269 2944 269 2266 
+C 269 1587 435 1037 781 614 
+C 1158 147 1702 -90 2413 -90 
+C 2899 -90 3322 51 3674 326 
+C 4051 621 4288 1037 4390 1568 
+L 3885 1568 
+C 3795 1171 3610 870 3341 666 
+C 3085 474 2778 378 2413 378 
+C 1875 378 1472 557 1190 909 
+C 922 1242 794 1696 794 2266 
+C 794 2835 928 3290 1197 3635 
+C 1485 4006 1894 4192 2426 4192 
+C 2784 4192 3085 4109 3334 3936 
+C 3590 3757 3757 3501 3821 3168 
+L 4326 3168 
+C 4262 3622 4058 3987 3712 4256 
+C 3366 4525 2938 4659 2432 4659 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-10" d="M 320 1875 
+L 320 1440 
+L 3552 1440 
+L 3552 1875 
+L 320 1875 
+z
+" transform="scale(0.015625)"/>
+      <path id="PingFangSC-Regular-1c" d="M 1869 4659 
+C 1421 4659 1050 4512 762 4211 
+C 467 3917 326 3546 326 3091 
+C 326 2650 454 2291 717 2016 
+C 986 1728 1338 1581 1779 1581 
+C 2048 1581 2285 1651 2490 1779 
+C 2701 1914 2867 2099 2982 2330 
+L 3008 2330 
+C 3008 2253 3014 2195 3014 2163 
+C 3014 1651 2912 1222 2714 883 
+C 2502 531 2221 352 1869 352 
+C 1331 352 1018 614 922 1133 
+L 403 1133 
+C 525 320 1011 -90 1862 -90 
+C 2374 -90 2784 154 3091 627 
+C 3373 1088 3520 1677 3520 2406 
+C 3520 3110 3386 3661 3117 4045 
+C 2835 4454 2419 4659 1869 4659 
+z
+M 1882 4218 
+C 2195 4218 2451 4109 2643 3891 
+C 2829 3686 2925 3424 2925 3104 
+C 2925 2790 2822 2528 2630 2323 
+C 2426 2118 2176 2016 1882 2016 
+C 1562 2016 1312 2118 1126 2317 
+C 934 2509 845 2771 845 3091 
+C 845 3424 934 3693 1126 3904 
+C 1318 4115 1568 4218 1882 4218 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#PingFangSC-Regular-734"/>
+     <use xlink:href="#PingFangSC-Regular-15bd" transform="translate(100 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1232" transform="translate(200 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1d4b" transform="translate(300 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(400 0)"/>
+     <use xlink:href="#PingFangSC-Regular-2c" transform="translate(433.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-36" transform="translate(457 0)"/>
+     <use xlink:href="#PingFangSC-Regular-32" transform="translate(520.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(596.90625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1331" transform="translate(630.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-752" transform="translate(730.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-6f8" transform="translate(830.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-481" transform="translate(930.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-14" transform="translate(1030.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-16" transform="translate(1070.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(1130.296875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-b5f" transform="translate(1163.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-ecf" transform="translate(1263.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-b5f" transform="translate(1363.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-485" transform="translate(1463.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-33" transform="translate(1563.59375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-44" transform="translate(1627.796875 0)"/>
+     <use xlink:href="#PingFangSC-Regular-51" transform="translate(1683.703125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-44" transform="translate(1739.609375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-56" transform="translate(1795.515625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-52" transform="translate(1846.015625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-51" transform="translate(1904.609375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-4c" transform="translate(1960.515625 0)"/>
+     <use xlink:href="#PingFangSC-Regular-46" transform="translate(1986.109375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-3" transform="translate(2040.8125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-27" transform="translate(2074.109375 0)"/>
+     <use xlink:href="#PingFangSC-Regular-26" transform="translate(2144.703125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-10" transform="translate(2217.5 0)"/>
+     <use xlink:href="#PingFangSC-Regular-36" transform="translate(2278 0)"/>
+     <use xlink:href="#PingFangSC-Regular-1c" transform="translate(2341.203125 0)"/>
+     <use xlink:href="#PingFangSC-Regular-482" transform="translate(2401.203125 0)"/>
+    </g>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="m1d365350b1" d="M 0 4 
+C 1.060812 4 2.078319 3.578535 2.828427 2.828427 
+C 3.578535 2.078319 4 1.060812 4 0 
+C 4 -1.060812 3.578535 -2.078319 2.828427 -2.828427 
+C 2.078319 -3.578535 1.060812 -4 0 -4 
+C -1.060812 -4 -2.078319 -3.578535 -2.828427 -2.828427 
+C -3.578535 -2.078319 -4 -1.060812 -4 0 
+C -4 1.060812 -3.578535 2.078319 -2.828427 2.828427 
+C -2.078319 3.578535 -1.060812 4 0 4 
+z
+" style="stroke: #ffffff; stroke-width: 1.5"/>
+    </defs>
+    <g clip-path="url(#p23c6151166)">
+     <use xlink:href="#m1d365350b1" x="84.122294" y="297.788763" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="84.122294" y="308.673455" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="166.857229" y="300.640572" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="216.160799" y="300.447873" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="232.033003" y="302.851132" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="263.777412" y="303.908734" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="281.336573" y="306.194388" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="297.208777" y="303.312443" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="330.640143" y="309.162794" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="346.512347" y="314.341641" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="346.512347" y="313.459457" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="411.688121" y="317.264297" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m1d365350b1" x="527.854422" y="311.862269" style="fill: #2a78d6; stroke: #ffffff; stroke-width: 1.5"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="mf28ca4613c" d="M 0 4 
+C 1.060812 4 2.078319 3.578535 2.828427 2.828427 
+C 3.578535 2.078319 4 1.060812 4 0 
+C 4 -1.060812 3.578535 -2.078319 2.828427 -2.828427 
+C 2.078319 -3.578535 1.060812 -4 0 -4 
+C -1.060812 -4 -2.078319 -3.578535 -2.828427 -2.828427 
+C -3.578535 -2.078319 -4 -1.060812 -4 0 
+C -4 1.060812 -3.578535 2.078319 -2.828427 2.828427 
+C -2.078319 3.578535 -1.060812 4 0 4 
+z
+" style="stroke: #ffffff; stroke-width: 1.5"/>
+    </defs>
+    <g clip-path="url(#p23c6151166)">
+     <use xlink:href="#mf28ca4613c" x="84.122294" y="212.486202" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="84.122294" y="245.275246" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="166.857229" y="206.67217" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="216.160799" y="267.14446" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="232.033003" y="262.0529" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="263.777412" y="260.583733" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="281.336573" y="254.109161" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="297.208777" y="258.462062" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="330.640143" y="255.037526" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="346.512347" y="254.632818" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="346.512347" y="261.57519" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="411.688121" y="239.356386" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#mf28ca4613c" x="527.854422" y="240.750576" style="fill: #eb6834; stroke: #ffffff; stroke-width: 1.5"/>
+    </g>
+   </g>
+   <g id="PathCollection_3">
+    <defs>
+     <path id="m0185748900" d="M 0 4.5 
+C 1.193414 4.5 2.338109 4.025852 3.181981 3.181981 
+C 4.025852 2.338109 4.5 1.193414 4.5 0 
+C 4.5 -1.193414 4.025852 -2.338109 3.181981 -3.181981 
+C 2.338109 -4.025852 1.193414 -4.5 0 -4.5 
+C -1.193414 -4.5 -2.338109 -4.025852 -3.181981 -3.181981 
+C -4.025852 -2.338109 -4.5 -1.193414 -4.5 0 
+C -4.5 1.193414 -4.025852 2.338109 -3.181981 3.181981 
+C -2.338109 4.025852 -1.193414 4.5 0 4.5 
+z
+" style="stroke: #ffffff; stroke-width: 1.5"/>
+    </defs>
+    <g clip-path="url(#p23c6151166)">
+     <use xlink:href="#m0185748900" x="84.122294" y="170.509579" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="84.122294" y="213.547064" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="166.857229" y="114.699598" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="216.160799" y="233.087117" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="232.033003" y="229.045144" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="263.777412" y="226.611675" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="281.336573" y="223.762458" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="297.208777" y="228.021344" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="330.640143" y="228.206703" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="346.512347" y="224.325776" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="346.512347" y="232.407262" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="411.688121" y="208.530222" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#m0185748900" x="527.854422" y="217.685368" style="fill: #1baf7a; stroke: #ffffff; stroke-width: 1.5"/>
+    </g>
+   </g>
+   <g id="PathCollection_4">
+    <defs>
+     <path id="ma9bf233df3" d="M 0 4 
+C 1.060812 4 2.078319 3.578535 2.828427 2.828427 
+C 3.578535 2.078319 4 1.060812 4 0 
+C 4 -1.060812 3.578535 -2.078319 2.828427 -2.828427 
+C 2.078319 -3.578535 1.060812 -4 0 -4 
+C -1.060812 -4 -2.078319 -3.578535 -2.828427 -2.828427 
+C -3.578535 -2.078319 -4 -1.060812 -4 0 
+C -4 1.060812 -3.578535 2.078319 -2.828427 2.828427 
+C -2.078319 3.578535 -1.060812 4 0 4 
+z
+" style="stroke: #ffffff; stroke-width: 1.5"/>
+    </defs>
+    <g clip-path="url(#p23c6151166)">
+     <use xlink:href="#ma9bf233df3" x="84.122294" y="143.084216" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="84.122294" y="191.376181" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="166.857229" y="63.168033" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="216.160799" y="197.826285" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="232.033003" y="193.530652" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="263.777412" y="190.40066" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="281.336573" y="188.519407" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="297.208777" y="194.515682" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="330.640143" y="196.336236" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="346.512347" y="189.246761" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="346.512347" y="197.985645" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="411.688121" y="172.145457" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+     <use xlink:href="#ma9bf233df3" x="527.854422" y="192.469099" style="fill: #eda100; stroke: #ffffff; stroke-width: 1.5"/>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p23c6151166">
+   <rect x="58.752" y="37.44" width="480.384" height="292.032"/>
+  </clipPath>
+ </defs>
+</svg>
