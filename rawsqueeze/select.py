@@ -2,8 +2,13 @@
 
 ``SNR18 = x18 / sqrt(g * x18 + s2)`` with ``x18 = 0.18 * X``, ``X = white - black`` and ``(g, s2)``
 the mean of the two green positions' (ISO-capped) noise parameters.  ``auto`` picks ``half3``
-when ``SNR18 >= snr_threshold`` (default 40) and the CFA is an RGGB-like Bayer, otherwise
+when ``SNR18 >= snr_threshold`` (default 60) and the CFA is an RGGB-like Bayer, otherwise
 ``nlq``.
+
+The default was calibrated on 13 DC-S9 files (ISO 100-51200, docs/STATUS.md "Threshold
+calibration"): below SNR18 ~40 half3 is no smaller than nlq at equal quality and visibly
+smooths grain; 60 (~ISO 450 on the DC-S9) leaves margin above the only sample between 40
+and 70.
 
 Noise parameters are computed elsewhere (``rawsqueeze.noise``); this module accepts any of:
 objects with ``.g``/``.s2`` (``.g_used`` preferred when present), ``(g, s2)`` tuples, or
@@ -24,7 +29,7 @@ from . import cfa
 if TYPE_CHECKING:
     from .rawio import RawFrame
 
-DEFAULT_SNR_THRESHOLD = 40.0
+DEFAULT_SNR_THRESHOLD = 60.0
 ENGINES = ("auto", "half3", "nlq", "gat4", "lossless")
 BAYER_ONLY = frozenset({"half3", "gat4"})
 

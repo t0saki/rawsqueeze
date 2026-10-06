@@ -54,14 +54,24 @@ def test_pair_overrides_and_nlq_f0_is_lossless() -> None:
 
 def test_options_and_validation() -> None:
     p = resolve(effort=7, layout="stack4", recon="centroid", noise_model="manual:0.5,3", snr_threshold=55,
-                matrix=False, satmask=False, threads=3, keep_preview="full", meta=False, recon_hash=True, foo=1)
+                matrix=False, satmask=False, threads=3, keep_preview="full", meta=False, recon_hash=True, gat4_K=900)
     assert (p.effort, p.layout, p.recon, p.noise_model, p.snr_threshold) == (7, "stack4", "centroid", "manual:0.5,3", 55.0)
     assert not p.use_matrix and not p.satmask and not p.store_meta and p.recon_hash
-    assert p.threads == 3 and p.keep_preview == "full" and p.extra == {"foo": 1}
+    assert p.threads == 3 and p.keep_preview == "full" and p.extra == {"gat4_K": 900}
     for bad in ({"preset": "nope"}, {"engine": "x"}, {"effort": 12}, {"layout": "x"}, {"recon": "x"},
                 {"noise_model": "bogus"}, {"keep_preview": "x"}, {"d": 0}, {"f": -1}, {"d": "abc"}):
         with pytest.raises(ValueError):
             resolve(bad)
+
+
+def test_unknown_keys_rejected() -> None:
+    with pytest.raises(ValueError, match="unknown option 'qualty'; did you mean 'quality'"):
+        resolve(preset="vl", qualty=0.5)
+    with pytest.raises(ValueError, match="'enigne'.*'engine'"):
+        resolve({"enigne": "half3", "d": 0.2})
+    with pytest.raises(ValueError, match="also unknown"):
+        resolve(dd=0.1, keep_prview="full")
+    assert resolve(foo=None).extra == {}  # None means "not given"
 
 
 def test_none_values_mean_not_given() -> None:

@@ -176,6 +176,55 @@ def test_acceptance_table_and_check() -> None:
     assert V.check_acceptance(rep)["passed"]
 
 
+def test_acceptance_unmeasured_is_failure() -> None:
+    """Requested but unmeasured criteria (tool missing) must not pass; unrequested ones are skipped."""
+    worst = {3.0: V.TileMetrics("w", 3.0, psnr=50.0)}  # ss2/ba None: tools missing
+    rep = V.VerifyReport("half3", "vl", "lossy", {"low_iso": True, "metrics": ["psnr", "ssimulacra2", "butteraugli"]},
+                         [3.0], [], worst, [], None, {}, {"inconsistent": 0}, False)
+    acc = V.check_acceptance(rep)
+    rep.acceptance = acc
+    assert not acc["passed"] and not rep.passed
+    assert any("ss2@+3EV not measured" in f for f in acc["failures"])
+    assert any("ba_p3@+3EV not measured" in f for f in acc["failures"])
+    assert "ss2@+0EV not requested" in acc["skipped"]  # quick verify: +3EV only
+    # metrics deliberately not requested -> skipped, passes
+    rep.params["metrics"] = ["psnr"]
+    acc = V.check_acceptance(rep)
+    assert acc["passed"] and "ss2@+3EV not requested" in acc["skipped"]
+    # nlq: noise requested but nothing measured -> fail
+    nrep = V.VerifyReport("nlq", "vl", "lossy", {"metrics": ["psnr", "noise"]}, [3.0], [], worst, [], None,
+                          {}, {"inconsistent": 0}, False)
+    acc = V.check_acceptance(nrep)
+    assert not acc["passed"] and "noise std ratio not measured" in acc["failures"]
+
+
+def test_verify_input_validation(frame_iso100) -> None:  # type: ignore[no-untyped-def]
+    head = frame_iso100.head_sections()
+    head.update(engine="nlq", mode="lossy", preset="vl")
+    m = frame_iso100.mosaic
+    with pytest.raises(ValueError, match="unknown metric 'ssim'"):
+        V.verify(m, m, head, metrics=("ssim",), floor=False)
+    with pytest.raises(ValueError, match="at least one EV"):
+        V.verify(m, m, head, evs=(), floor=False)
+    with pytest.raises(ValueError, match="tiles"):
+        V.verify(m, m, head, tiles=0, floor=False)
+    assert V.validate_metrics(["psnr", " noise"]) == ("psnr", "noise")
+    with pytest.raises(ValueError):
+        V.validate_metrics([])
+
+
+def test_verify_missing_tools_fails_half3(frame_iso100, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setattr(V, "have", lambda name: False)
+    rec = frame_iso100.mosaic.copy()
+    rec[100:110, 100:110] += 3
+    head = frame_iso100.head_sections()
+    head.update(engine="half3", mode="lossy", preset="vl")
+    rep = V.verify(frame_iso100.mosaic, rec, head, evs=(3.0,), tiles=1, floor=False,
+                   metrics=("psnr", "ssimulacra2", "butteraugli"))
+    assert not rep.passed
+    assert "ss2@+3EV not measured (ssimulacra2 not found)" in rep.acceptance["failures"]
+
+
 # ---------------------------------------------------------------------------------------
 # verify()
 

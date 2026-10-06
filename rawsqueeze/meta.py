@@ -773,13 +773,18 @@ def transfer_exif(
     Skeleton strategy (DESIGN.md 3.5.4)::
 
         exiftool -b -JpgFromRaw skel.rw2 > jfr.jpg
-        exiftool -q -q -overwrite_original \\
+        exiftool -q -overwrite_original \\
           -tagsFromFile jfr.jpg -exif:all -makernotes -gps:all --IFD0:all --IFD1:all --ThumbnailImage \\
-          -tagsFromFile skel.rw2 -IFD0:Make -IFD0:Model -IFD0:Orientation -xmp:all  out.dng
+          -tagsFromFile skel.rw2 -IFD0:Make -IFD0:Model -IFD0:Orientation \\
+              -IFD0:ModifyDate -IFD0:Artist -IFD0:Copyright -xmp:all \\
+          -OriginalRawFileName=<source_name>  out.dng
 
     When the skeleton has no JpgFromRaw (non-RW2 raws), EXIF/MakerNotes/GPS are copied from
     the skeleton itself.  exif-only strategy: copied from the stored ``.exif`` blob.
-    ``source_name`` gives the skeleton's temp file extension (default ``.rw2``).
+    ``source_name`` gives the skeleton's temp file extension (default ``.rw2``) and the DNG
+    ``OriginalRawFileName``.  A single ``-q`` keeps exiftool warnings (reported), and a
+    post-check reads ``ExifIFD:ExifVersion`` back: if no EXIF arrived in the DNG (unparsable
+    skeleton, ...) a warning says so instead of reporting a silent success.
     Uses ``et`` (a running :class:`ExifTool`) if given, else one-shot subprocesses.
     """
     t0 = time.perf_counter()
@@ -802,27 +807,66 @@ def transfer_exif(
             skel = os.path.join(td, "skel" + _source_ext(source_name))
             Path(skel).write_bytes(blob.skeleton)
             jfr_bytes, _ = call(["-b", "-JpgFromRaw", skel])
-            args = ["-q", "-q", "-overwrite_original"]
+            args = ["-q", "-overwrite_original"]
             if jfr_bytes.startswith(b"\xff\xd8"):
                 jfr = os.path.join(td, "jfr.jpg")
                 Path(jfr).write_bytes(jfr_bytes)
                 used_jfr = True
                 args += ["-tagsFromFile", jfr, "-exif:all", "-makernotes", "-gps:all", "--IFD0:all", "--IFD1:all", "--ThumbnailImage"]
-                args += ["-tagsFromFile", skel, "-IFD0:Make", "-IFD0:Model", "-IFD0:Orientation", "-xmp:all", dng]
             else:
                 args += ["-tagsFromFile", skel, "-exif:all", "-makernotes", "-gps:all", "--IFD0:all", "--IFD1:all", "--ThumbnailImage"]
-                args += ["-tagsFromFile", skel, "-IFD0:Make", "-IFD0:Model", "-IFD0:Orientation", "-xmp:all", dng]
+            args += ["-tagsFromFile", skel, *SKELETON_IFD0_TAGS, "-xmp:all"]
         else:
             exv = os.path.join(td, "x.exif")
             Path(exv).write_bytes(blob.exif_blob)
-            args = ["-q", "-q", "-overwrite_original", "-tagsFromFile", exv, "-exif:all", "-makernotes", "-gps:all", "--IFD0:all", "--IFD1:all", dng]
+            args = ["-q", "-overwrite_original", "-tagsFromFile", exv, "-exif:all", "-makernotes", "-gps:all", "--IFD0:all", "--IFD1:all"]
             warnings.append("exif-only metadata: partial transfer")
-        _, err = call(args)
+        if source_name and _safe_tag_value(source_name):
+            args.append(f"-OriginalRawFileName={source_name}")
+        _, err = call([*args, dng])
+        check, _ = call(["-s3", "-ExifIFD:ExifVersion", dng])
     if "Error" in err:
         raise ToolError(f"exiftool EXIF transfer failed: {err.strip()[:1000]}")
     if err.strip():
         warnings.append(err.strip()[:500])
+    if not check.strip():
+        warnings.append("EXIF transfer copied no EXIF tags into the DNG (exiftool could not use the stored metadata"
+                        + (f": {err.strip()[:200]}" if err.strip() else "") + ")")
     return TransferReport(blob.strategy, used_jfr, round(time.perf_counter() - t0, 4), err.strip(), warnings)
+
+
+SKELETON_IFD0_TAGS: tuple[str, ...] = (
+    "-IFD0:Make", "-IFD0:Model", "-IFD0:Orientation", "-IFD0:ModifyDate", "-IFD0:Artist", "-IFD0:Copyright",
+)
+"""IFD0 tags copied from the skeleton (the camera Software string is replaced by rawsqueeze's, Q10)."""
+
+
+def _safe_tag_value(s: str) -> bool:
+    return "\n" not in s and "\r" not in s and len(s) < 512
+
+
+def panasonic_distortion_info(meta_payload: bytes) -> bytes | None:
+    """Raw bytes of the Panasonic ``DistortionInfo`` tag (0x0119, RW2 IFD0) from a skeleton META.
+
+    The in-camera lens distortion correction parameters (exiftool: DistortionParam02..11,
+    DistortionScale, DistortionCorrection) live in the RW2 raw IFD, which has no DNG
+    counterpart; rawsqueeze keeps them in the DNG XMP (``rawsqueeze:PanasonicDistortionInfo``)
+    but does not convert them to a WarpRectilinear opcode.  ``None`` if absent.
+    """
+    try:
+        blob = parse_meta(meta_payload)
+        if blob.strategy != "skeleton":
+            return None
+        data = blob.skeleton
+        info = parse_tiff(data, max_ifds=2)
+    except (MetaError, ValueError):
+        return None
+    if info.magic != 0x55 or not info.ifds:
+        return None
+    e = info.ifds[0].entries.get(0x0119)
+    if e is None or e.size <= 0 or e.data_offset + e.size > len(data):
+        return None
+    return bytes(data[e.data_offset : e.data_offset + e.size])
 
 
 def write_skeleton_file(meta_payload: bytes, path: str | os.PathLike[str]) -> Path:
@@ -877,6 +921,7 @@ __all__ = [
     "locate_raw_layout",
     "make_exif_only",
     "make_skeleton",
+    "panasonic_distortion_info",
     "pack_exif_only",
     "parse_meta",
     "parse_tiff",

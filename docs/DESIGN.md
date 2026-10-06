@@ -13,7 +13,7 @@ rawsqueeze 是一个**自适应双引擎** RAW 编解码器。它使用全新的
 
 | 引擎 | 原理 | 用在哪里 | 依据 |
 |---|---|---|---|
-| `half3` | 半分辨率 WB+相机矩阵 → 线性 sRGB（float32，3 通道 JXL VarDCT/XYB）+ G1−G2 差分平面（灰度 VarDCT）+ 饱和掩码 | **低噪声**文件（默认：SNR18 ≥ 40，DC-S9 上约 ISO ≤ 700） | A：完整 ISO100 文件 d0.2 = 4.89 MB（5.78x），+2/+3EV 画质不低于 sqrt-k2 基线（6.79 MB）；ISO320 裁切上比基线小 3–3.8x |
+| `half3` | 半分辨率 WB+相机矩阵 → 线性 sRGB（float32，3 通道 JXL VarDCT/XYB）+ G1−G2 差分平面（灰度 VarDCT）+ 饱和掩码 | **低噪声**文件（默认：SNR18 ≥ 60，DC-S9 上约 ISO ≤ 450；2026-10 标定，见 Q1） | A：完整 ISO100 文件 d0.2 = 4.89 MB（5.78x），+2/+3EV 画质不低于 sqrt-k2 基线（6.79 MB）；ISO320 裁切上比基线小 3–3.8x |
 | `nlq` | 每个 CFA 平面估计噪声模型 var=g·x+s2 → 压扩曲线，量化步长 = f·σ(x)（σ<1 DN 处为恒等）→ 整数平面送 JXL modular **无损**（e3） | **高噪声**文件；`f=0` 时就是**无损模式** | B：ISO4000 f1 = 3.12–3.17x，误差在统计上等价于 +4% 的高斯噪声 RMS；无损 1.34–1.59x |
 | `gat4`（实验性） | GAT 归一化后的 4 个 CFA 平面送 JXL VarDCT | 可选，非默认 | B：ISO100 时在相同 ssimulacra2 下比 nlq 小 10–30%，但没有做 AHD/butteraugli 伪影检查 |
 
@@ -180,8 +180,9 @@ effort 非单调的原因（B）：e3 用的是围绕自校正加权预测器（
 
 ### 2.4 引擎选择（`--engine auto`，默认）
 - 取 G1/G2 的 `g_used` 均值 `ĝ` 和 `ŝ2`；令 `x18 = 0.18·X`，`SNR18 = x18 / sqrt(ĝ·x18 + ŝ2)`。
-- 若 `SNR18 ≥ T_snr`（默认 **40**）且 CFA 为 RGGB 类 Bayer，选 half3，否则选 nlq。
+- 若 `SNR18 ≥ T_snr`（默认 **60**，原为 40，已按 Q1 标定）且 CFA 为 RGGB 类 Bayer，选 half3，否则选 nlq。
 - DC-S9 估算：ISO100 ≈ 107，ISO320 ≈ 73，ISO800 ≈ 38，ISO4000 ≈ 17。阈值 40 ≈ ISO 700。half3 实测良好的范围是 ISO ≤ 320，实测失败的是 ISO4000；中间 800–3200 **没有数据**，所以阈值偏保守（宁可落到 nlq：画质安全，只是压缩比低一些）。见开放问题 Q1。
+- **Q1 已解决（2026-10）**：用 13 张 DC-S9 样张（ISO 100–51200）标定（表格见 docs/STATUS.md「阈值标定」）。SNR18 ≤ 40（ISO ≥ 800）时 half3 在等质量下不比 nlq 小，且 +3EV 颗粒被压平（噪声比 0.85–0.93）；SNR18 ≥ 70 时 half3 只有 nlq 体积的 0.29–0.51。40–70 之间唯一的样张（ISO640）受色域问题污染，因此取 **60** 留余量。色域问题（XYB 钳掉负的 opsin 混合值）另由 half3 的矩阵混合门控修复（R7）。
 - 为什么不用 G1−G2 的 MAD：A 实测它分不开纹理和噪声（PANA9831 ISO100 读数 0.89，ISO4000 是 0.85–0.90）。估计器高估 g 时会偏向 nlq，方向是安全的。
 - 预设和 `--quality` 的映射按引擎分别给（第 4 节）。`-q` 的语义随引擎变化：half3/gat4 是 d，nlq 是 f。
 
@@ -341,7 +342,7 @@ EOF-4  4    b"RSQE"       (尾标；缺失 = 截断)
 | d | `--d` | 0.2 | 0.05–0.45 | half3 主旋钮；≥0.45 时 +3EV 可见损失（A） |
 | f | `--f` | 1.0 | 0（无损）、0.25–4 | nlq 步长（以 σ 为单位）；附加噪声 RMS = sqrt(1+f²/12)−1 |
 | dD | `--dD` | = d | d..2d | D 平面距离（A：= d 接近最优） |
-| snr threshold | `--snr-threshold` | 40 | 10–200 | auto 选择阈值（开放问题 Q1） |
+| snr threshold | `--snr-threshold` | 60 | 10–200 | auto 选择阈值（Q1，已标定） |
 | effort | `--effort` | 无损/nlq 3，half3 5 | 1–9 | nlq：≥5 时切到 stack4 e7（小约 4%，慢 8x）；1 = 最快（约大 12%） |
 | layout | `--layout` | 由 effort 决定 | planes\|stack4 | nlq/无损 |
 | recon | `--recon` | auto | auto\|mid\|centroid | auto：f≥2 用 centroid |
@@ -503,13 +504,13 @@ def verify_file(rsq_path, original_path, *, evs=(0,2,3), tiles=4, full=False, me
 
 | # | 风险 | 缓解 |
 |---|---|---|
-| R1 | half3 在高噪声下灾难性失败（ISO4000 AHD 显影 butteraugli 11.7/22.2），而 800–3200 之间没有数据 | 保守阈值 SNR18 ≥ 40；auto 只在 half3 实测良好的区间启用；实现后用中 ISO 样张标定阈值（Q1）；`encode --verify` 发现超出判据时自动回退到 nlq（仅在 `encode --verify` 时生效，可用 `--no-fallback` 关闭；代价是一次快速 verify，约 3 s） |
+| R1 | half3 在高噪声下灾难性失败（ISO4000 AHD 显影 butteraugli 11.7/22.2），而 800–3200 之间没有数据 | 阈值 SNR18 ≥ 60（已用中 ISO 样张标定，Q1）；auto 只在 half3 实测良好的区间启用；`encode --verify` 发现超出判据时自动回退到 nlq（仅在 `encode --verify` 时生效，可用 `--no-fallback` 关闭；代价是一次快速 verify，约 3 s） |
 | R2 | 噪声估计在纹理丰富场景高估 g（PANA9831 高 2.3x），而且其它相机没有 ISO 上限表 | ISO 上限表；输入为 DNG 时读 NoiseProfile；`--noise-model manual`；高估的方向是安全的（落到 nlq 或步长变大），并在 verify 中报告 |
 | R3 | "视觉无损"判据：vl/half3 d0.2 的 +3EV ss2 约 81，低于严格的 85；高 ISO 下全参考指标失效 | 判据按引擎分开（第 6.4 节），并报 FLOOR 对照与噪声相对指标；提供 `high` 预设；实现后做一次人工 A/B 目视检查（Q4） |
 | R4 | 高光：half3 在部分饱和 quad 处误差最高约 900 DN；非掩码像素可能产生假饱和或洋红色；nlq LUT 舍入可能让裁切值低于 wl | SATM 掩码 + nlq 饱和码；verify 检查裁切一致性；`--no-satmask` 只用于调试 |
 | R5 | 元数据和 DNG 的通用性：骨架策略依赖 RW2 的 RawDataOffset 和"MakerNotes 在 JpgFromRaw APP1"；pidng 有各种怪癖；DNG 只有 ColorMatrix1，Lightroom 渲染可能与原生 RW2 配置不同 | 骨架定位按格式分派，失败走 exif-only 兜底；只保留 LJ92DNG 子类这一条写入路径；rgb_xyz_matrix 为零时从骨架读或拒绝写 DNG |
 | R6 | half3/gat4 的浮点解码在不同 libjxl 版本或平台间不逐位一致 | 记录 libjxl 版本；recon_sha256 只作提示；需要逐位确定的场合用 nlq |
-| R7 | JXL XYB 会把低于约 −0.0038 的线性值钳掉，深色饱和色暗部有约 1 DN 的正偏置 | 实测影响很小；以开放问题 Q6 跟踪（是否加 pedestal） |
+| R7 | JXL XYB 会把低于约 −0.0038 的线性值钳掉，深色饱和色暗部有约 1 DN 的正偏置 | 实测影响很小；以开放问题 Q6 跟踪（是否加 pedestal）。**补充（2026-10 review）**：更严重的是 libjxl 把 opsin 混合值 `OPSIN·rgb + 0.0038` 钳到 ≥ 0，饱和蓝/青色 LED 会被系统性改写（ISO640 样张 raw 偏差 R +67 DN）。修复：编码时计算每个位点所需的混合系数，把 M 向 I 混合到最小的 α 使 opsin 混合值非负（允许 1e-6 比例的孤立位点例外），α 写入 HEAD `matrix_blend`，解码器只用 Minv，格式不变 |
 | R8 | 黑电平的特殊情况：LibRaw 二维 cblack 图案、低于黑电平的负噪声、非 Bayer CFA | nlq 用负值偏移；half3 在 [0,1] 裁剪（低噪声文件影响很小）；不支持的布局只做无损 |
 | R9 | 裁切实验（bilinear）比全幅 AHD 乐观（1.84x vs 1.39x） | 所有默认值以全幅 AHD 结果为准；bench 默认用 AHD |
 
@@ -517,7 +518,7 @@ def verify_file(rsq_path, original_path, *, evs=(0,2,3), tiles=4, full=False, me
 
 | # | 问题 | 推荐默认 |
 |---|---|---|
-| Q1 | half3/nlq 的切换阈值（中 ISO 无数据） | SNR18=40（≈ DC-S9 ISO700）；拿到 ISO 800/1600/3200 样张后，用 `bench` 在等质量点比较体积再标定 |
+| Q1 | half3/nlq 的切换阈值（中 ISO 无数据） | **已解决**：SNR18=60（≈ DC-S9 ISO450），由 13 张 ISO 100–51200 样张标定（docs/STATUS.md「阈值标定」，第 2.4 节） |
 | Q2 | 按 tile 混合引擎（A 的建议） | v1 不做；容器保留 `TILE` |
 | Q3 | 中 ISO 和 compact 场景下 gat4 是否优于 half3 或 nlq | gat4 保持实验性；必须先通过全幅 AHD + butteraugli 验证 |
 | Q4 | vl 的 half3 d 取 0.2 还是 0.15 | 0.2（压缩比优先，指标与 sqrt-k2 基线持平）；如果人工目视在 +3EV 下看出差异，改为 0.15 |

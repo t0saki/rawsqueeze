@@ -37,6 +37,7 @@ from .tools import ToolError, have, run
 
 DEFAULT_EVS: tuple[float, ...] = (0.0, 2.0, 3.0)
 DEFAULT_METRICS: tuple[str, ...] = ("psnr", "ssimulacra2", "butteraugli", "noise")
+KNOWN_METRICS: tuple[str, ...] = DEFAULT_METRICS
 FLOOR_METRICS: tuple[str, ...] = ("psnr", "ssimulacra2")
 TILE_SIZE = 2048
 FLOOR_SEED = 5
@@ -641,56 +642,91 @@ def _worst(ms: Sequence[TileMetrics], ev: float) -> TileMetrics:
     return w
 
 
+def validate_metrics(metrics: Iterable[str]) -> tuple[str, ...]:
+    """Check metric names against :data:`KNOWN_METRICS`; returns them as a tuple.
+
+    Raises ``ValueError`` for an unknown name (a typo would otherwise measure nothing and
+    pass) or an empty list.
+    """
+    ms = tuple(m.strip() for m in metrics if m and m.strip())
+    if not ms:
+        raise ValueError(f"no metrics given; expected some of {', '.join(KNOWN_METRICS)}")
+    bad = [m for m in ms if m not in KNOWN_METRICS]
+    if bad:
+        import difflib
+
+        hints = [f"{m!r} (did you mean {difflib.get_close_matches(m, KNOWN_METRICS, 1, 0.4)[0]!r}?)"
+                 if difflib.get_close_matches(m, KNOWN_METRICS, 1, 0.4) else repr(m) for m in bad]
+        raise ValueError(f"unknown metric {', '.join(hints)}; expected some of {', '.join(KNOWN_METRICS)}")
+    return ms
+
+
 def check_acceptance(report: VerifyReport, criteria: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Evaluate DESIGN.md 6.4 criteria; returns ``{"criteria", "passed", "failures", "skipped"}``."""
+    """Evaluate DESIGN.md 6.4 criteria; returns ``{"criteria", "passed", "failures", "skipped"}``.
+
+    A criterion is *skipped* only when the caller did not ask for it (its EV is not in
+    ``report.evs`` or its metric is not in ``report.params["metrics"]``, e.g. the 0EV ss2 of
+    the quick verify).  A requested criterion that could not be measured (tool missing, no
+    centre/darkest tile, ...) is a *failure*: the result is inconclusive and must not pass.
+    """
     if criteria is None:
         criteria = acceptance_criteria(report.preset, report.engine, report.mode)
     if criteria is None:
         return {"criteria": None, "passed": True, "failures": [], "skipped": ["no criteria for preset/engine"]}
     fails: list[str] = []
     skipped: list[str] = []
+    asked = set(report.params.get("metrics") or DEFAULT_METRICS)
+    evs = {float(e) for e in report.evs}
+    tool = {"ssimulacra2": "ssimulacra2", "butteraugli": "butteraugli_main"}
     if criteria.get("mosaic_equal") and not report.mosaic_equal:
         fails.append("mosaic not bit-exact")
-    for ev, thr in (criteria.get("ss2_min") or {}).items():
-        w = report.worst.get(float(ev))
-        if w is None or w.ss2 is None:
-            skipped.append(f"ss2@{ev:+g}EV not measured")
-        elif w.ss2 < thr:
-            fails.append(f"ss2@{ev:+g}EV {w.ss2:.2f} < {thr}")
-    for ev, thr in (criteria.get("ba_p3_max") or {}).items():
-        w = report.worst.get(float(ev))
-        if w is None or w.ba_p3 is None:
-            skipped.append(f"ba_p3@{ev:+g}EV not measured")
-        elif w.ba_p3 > thr:
-            fails.append(f"ba_p3@{ev:+g}EV {w.ba_p3:.3f} > {thr}")
+    for key, metric, attr, label in (
+        ("ss2_min", "ssimulacra2", "ss2", "ss2"),
+        ("ba_p3_max", "butteraugli", "ba_p3", "ba_p3"),
+    ):
+        for ev, thr in (criteria.get(key) or {}).items():
+            ev = float(ev)
+            if ev not in evs or metric not in asked:
+                skipped.append(f"{label}@{ev:+g}EV not requested")
+                continue
+            w = report.worst.get(ev)
+            v = None if w is None else getattr(w, attr)
+            if v is None:
+                why = f" ({tool[metric]} not found)" if not have(tool[metric]) else ""
+                fails.append(f"{label}@{ev:+g}EV not measured{why}")
+            elif key == "ss2_min" and v < thr:
+                fails.append(f"{label}@{ev:+g}EV {v:.2f} < {thr}")
+            elif key == "ba_p3_max" and v > thr:
+                fails.append(f"{label}@{ev:+g}EV {v:.3f} > {thr}")
     if "clip_inconsistent_max" in criteria and report.clip.get("inconsistent", 0) > criteria["clip_inconsistent_max"]:
         fails.append(f"clip inconsistent pixels {report.clip['inconsistent']}")
     nz = report.noise or {}
     for key, metric, label in (
         ("noise_ratio_max", "noise_ratio_max", "noise std ratio"),
         ("rmse_sigma_max", "rmse_sigma_max", "raw RMSE/sigma"),
+        ("bias8_abs_max", "bias8_abs_max", "|bias8|"),
     ):
-        if key in criteria:
-            v = nz.get(metric)
-            if v is None:
-                skipped.append(f"{label} not measured")
-            elif v > criteria[key]:
-                fails.append(f"{label} {v:.4f} > {criteria[key]}")
-    if "bias8_abs_max" in criteria:
-        v = nz.get("bias8_abs_max")
+        if key not in criteria:
+            continue
+        if "noise" not in asked:
+            skipped.append(f"{label} not requested")
+            continue
+        v = nz.get(metric)
         if v is None:
-            skipped.append("bias not measured")
-        elif v > criteria["bias8_abs_max"]:
-            fails.append(f"|bias8| {v:.3f} > {criteria['bias8_abs_max']}")
+            fails.append(f"{label} not measured")
+        elif v > criteria[key]:
+            fails.append(f"{label} {v:.4f} > {criteria[key]}")
     if "ss2_floor_margin" in criteria:
         if not report.params.get("low_iso", False):
             skipped.append("ss2 >= FLOOR - margin applies at low ISO only")
-        elif not report.floor:
-            skipped.append("FLOOR not measured")
+        elif not report.floor or "ssimulacra2" not in asked:
+            skipped.append("FLOOR not requested")
         else:
             for ev, fm in report.floor.items():
                 w = report.worst.get(ev)
-                if w and w.ss2 is not None and fm.ss2 is not None and w.ss2 < fm.ss2 - criteria["ss2_floor_margin"]:
+                if w is None or w.ss2 is None or fm.ss2 is None:
+                    fails.append(f"ss2/FLOOR@{ev:+g}EV not measured")
+                elif w.ss2 < fm.ss2 - criteria["ss2_floor_margin"]:
                     fails.append(f"ss2@{ev:+g}EV {w.ss2:.2f} < FLOOR {fm.ss2:.2f} - {criteria['ss2_floor_margin']}")
     return {"criteria": _jsonable(dict(criteria)), "passed": not fails, "failures": fails, "skipped": skipped}
 
@@ -741,6 +777,11 @@ def verify(
     if orig_mosaic.shape != rec_mosaic.shape:
         raise ValueError(f"shape mismatch {orig_mosaic.shape} vs {rec_mosaic.shape}")
     evs = [float(e) for e in evs]
+    if not evs:
+        raise ValueError("verify needs at least one EV")
+    if not full and int(tiles) < 1:
+        raise ValueError(f"tiles must be >= 1, got {tiles}")
+    metrics = validate_metrics(metrics)
     engine = engine or head.get("engine")
     preset = preset or head.get("preset")
     mode = head.get("mode")
@@ -880,6 +921,7 @@ __all__ = [
     "DEFAULT_EVS",
     "DEFAULT_METRICS",
     "FLOOR_SEED",
+    "KNOWN_METRICS",
     "TileMetrics",
     "TileRect",
     "VerifyReport",
@@ -905,6 +947,7 @@ __all__ = [
     "raw_noise_metrics",
     "save_report",
     "ssimulacra2",
+    "validate_metrics",
     "verify",
     "write_ppm16",
 ]

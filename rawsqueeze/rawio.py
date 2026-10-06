@@ -39,6 +39,10 @@ EXIF_TAGS: tuple[str, ...] = (
 """Tags fetched by :func:`load_raw` with ``exiftool -j -n``."""
 
 
+class RawReadError(ValueError):
+    """The input is missing, not a supported camera raw file, or truncated/corrupt."""
+
+
 @dataclass
 class RawFrame:
     """A decoded raw mosaic plus all metadata needed for HEAD and DNG reconstruction.
@@ -223,6 +227,37 @@ def _libraw_version_str(v: object) -> str:
     return str(v)
 
 
+_RAW_MAGIC = (b"II*\x00", b"MM\x00*", b"IIU\x00", b"IIRO", b"IIRS", b"MMOR", b"FUJIFILM", b"\x00MRM", b"FOVb")
+
+
+def _looks_like_raw(p: Path) -> bool:
+    """Cheap header sniff: TIFF-based raws, RW2, ORF, RAF, MRW, X3F, ISO-BMFF (CR3)."""
+    try:
+        with open(p, "rb") as f:
+            head = f.read(16)
+    except OSError:
+        return False
+    return head.startswith(_RAW_MAGIC) or head[4:8] == b"ftyp"
+
+
+def _libraw_reason(exc: BaseException, p: Path) -> str:
+    """Readable reason for a rawpy/LibRaw exception (its messages are bytes reprs otherwise)."""
+    import rawpy
+
+    msg = exc.args[0] if exc.args else ""
+    if isinstance(msg, (bytes, bytearray)):
+        msg = bytes(msg).decode("utf-8", errors="replace")
+    kind = type(exc).__name__
+    raw_like = _looks_like_raw(p)
+    if isinstance(exc, rawpy.LibRawFileUnsupportedError):
+        why = "unsupported camera raw format" if raw_like else "not a camera raw file"
+    elif isinstance(exc, (rawpy.LibRawIOError, rawpy.LibRawDataError)):
+        why = "file truncated or corrupt" if raw_like else "not a camera raw file"
+    else:
+        why = "LibRaw could not decode the file"
+    return f"{why} ({kind}: {msg})" if msg else f"{why} ({kind})"
+
+
 def load_raw(
     path: str | os.PathLike[str],
     *,
@@ -240,28 +275,35 @@ def load_raw(
     import rawpy
 
     p = Path(path)
-    with rawpy.imread(os.fspath(p)) as r:
-        mosaic = np.array(r.raw_image, dtype=np.uint16, copy=True)
-        raw_pattern = r.raw_pattern
-        pattern = (
-            np.array(raw_pattern, dtype=np.int64)
-            if raw_pattern is not None
-            else np.zeros((2, 2), dtype=np.int64)
-        )
-        desc_raw = r.color_desc
-        color_desc = (
-            desc_raw.decode("ascii", errors="replace")
-            if isinstance(desc_raw, (bytes, bytearray))
-            else str(desc_raw)
-        )
-        black_ch = [int(v) for v in r.black_level_per_channel]
-        white = int(r.white_level)
-        cam_wb_raw = [float(v) for v in r.camera_whitebalance]
-        day_wb = [float(v) for v in r.daylight_whitebalance]
-        xyz = np.array(r.rgb_xyz_matrix, dtype=np.float64)[:3].copy()
-        s = r.sizes
-        raw_type = str(getattr(r.raw_type, "name", r.raw_type))
-        num_colors = int(r.num_colors)
+    if not p.exists():
+        raise RawReadError(f"{p}: file not found")
+    if not p.is_file():
+        raise RawReadError(f"{p}: not a regular file")
+    try:
+        with rawpy.imread(os.fspath(p)) as r:
+            mosaic = np.array(r.raw_image, dtype=np.uint16, copy=True)
+            raw_pattern = r.raw_pattern
+            pattern = (
+                np.array(raw_pattern, dtype=np.int64)
+                if raw_pattern is not None
+                else np.zeros((2, 2), dtype=np.int64)
+            )
+            desc_raw = r.color_desc
+            color_desc = (
+                desc_raw.decode("ascii", errors="replace")
+                if isinstance(desc_raw, (bytes, bytearray))
+                else str(desc_raw)
+            )
+            black_ch = [int(v) for v in r.black_level_per_channel]
+            white = int(r.white_level)
+            cam_wb_raw = [float(v) for v in r.camera_whitebalance]
+            day_wb = [float(v) for v in r.daylight_whitebalance]
+            xyz = np.array(r.rgb_xyz_matrix, dtype=np.float64)[:3].copy()
+            s = r.sizes
+            raw_type = str(getattr(r.raw_type, "name", r.raw_type))
+            num_colors = int(r.num_colors)
+    except rawpy.LibRawError as exc:
+        raise RawReadError(f"{p}: {_libraw_reason(exc, p)}") from exc
 
     if pattern.shape == (2, 2):
         blk_pos = cfa.black_per_position(pattern, black_ch)

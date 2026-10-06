@@ -152,7 +152,10 @@ def test_skeleton_on_tiled_lj92_dng(frame_iso100) -> None:  # type: ignore[no-un
     data = dng_encode(frame_iso100.mosaic, frame_iso100.head_sections(), compression="lj92")
     layout = meta.locate_raw_layout(data)
     assert layout.method == "TileOffsets"
-    assert len(layout.raw_regions) == 4  # 512x512 / 256^2
+    from rawsqueeze.dng import effective_tile
+
+    tw, th = effective_tile(512, (256, 256))  # 128x256: LibRaw quirk at 2*tw == width
+    assert len(layout.raw_regions) == (512 // tw) * (512 // th)
     payload, info = meta.make_skeleton(None, data)
     assert info["strategy"] == "skeleton"
     assert len(payload) <= len(data)

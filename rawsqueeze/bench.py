@@ -46,7 +46,7 @@ import numpy as np
 
 from .container import make_chunk, make_head_chunk, read_rsq, write_rsq
 from .rawio import RawFrame, crop_frame, load_raw
-from .verify import DEFAULT_EVS, DEFAULT_METRICS, VerifyReport, verify
+from .verify import DEFAULT_EVS, DEFAULT_METRICS, VerifyReport, validate_metrics, verify
 
 EncodeFn = Callable[[RawFrame, str, dict[str, Any]], tuple[Any, dict[str, Any]]]
 DecodeFn = Callable[[dict[str, Any], Mapping[str, bytes]], np.ndarray]
@@ -193,11 +193,19 @@ def run_sweep(
     metrics.  ``reports`` (optional list) receives each VerifyReport.
     """
     cfgs = [dict(c) for c in sweep] if (not isinstance(sweep, str) and sweep and isinstance(sweep[0], Mapping)) else parse_sweep(sweep)  # type: ignore[arg-type]
+    metrics = validate_metrics(metrics)
     say = log or (lambda s: print(s, file=sys.stderr))
     rows: list[dict[str, Any]] = []
     files = list(files)
     for fi, src in enumerate(files):
-        frame = src if isinstance(src, RawFrame) else load_raw(src)
+        try:
+            frame = src if isinstance(src, RawFrame) else load_raw(src)
+        except (ValueError, OSError) as exc:  # a bad input must not stop the sweep
+            name = Path(os.fspath(src)).name
+            say(f"[bench] {name}: ERROR {exc}")
+            rows += [{"file": name, "engine": str(c.get("engine", "auto")), "param": param_string(c),
+                      "effort": c.get("effort"), "error": str(exc)} for c in cfgs]
+            continue
         # Ratios need the full-sensor area; a frame that is already a crop of its source
         # (crop_origin != (0, 0)) has unknown full area -> ratios are left empty.
         known_full = not frame.is_cropped

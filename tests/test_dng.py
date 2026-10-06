@@ -112,6 +112,57 @@ def test_lj92_edge_tiles(shape: tuple[int, int], synthetic_frame_factory) -> Non
     assert tw % 16 == 0 and (tw <= shape[1])
 
 
+def _ljpeg_headers(tile: bytes) -> dict[str, Any]:
+    """SOF3 / SOS fields of one LJ92 tile."""
+    i = tile.index(b"\xff\xc3")
+    P, Y, X, Nf = tile[i + 4], int.from_bytes(tile[i + 5 : i + 7], "big"), int.from_bytes(tile[i + 7 : i + 9], "big"), tile[i + 9]
+    j = tile.index(b"\xff\xda")
+    Ns = tile[j + 4]
+    return {"P": P, "Y": Y, "X": X, "Nf": Nf, "Ns": Ns, "Ss": tile[j + 5 + 2 * Ns], "Al": tile[j + 7 + 2 * Ns] & 15}
+
+
+@pytest.mark.parametrize("width", [512, 6016 // 8, 300])
+def test_lj92_rawspeed_compatible_layout(width: int, synthetic_frame_factory) -> None:  # type: ignore[no-untyped-def]
+    """rawspeed (darktable) needs predictor 1 and a JPEG frame whose width x components tiles the DNG tile."""
+    import imagecodecs
+
+    fr = synthetic_frame_factory(h=272, w=width, g=2.0, s2=30.0)
+    buf = dng.dng_encode(fr.mosaic, fr.head_sections(), compression="lj92", threads=2)
+    t = _tags(buf)
+    tw, th = t[322][0], t[323][0]
+    assert 2 * tw != width  # LibRaw reads 2 tile rows per JPEG row in that case
+    info = meta.parse_tiff(buf)
+    offs, cnts = info.values(buf, info.ifds[0].entries[324]), info.values(buf, info.ifds[0].entries[325])
+    tiles_x = -(-width // tw)
+    for k, (o, n) in enumerate(zip(offs, cnts)):
+        tile = buf[o : o + n]
+        h = _ljpeg_headers(tile)
+        assert h["Ss"] == 1 and h["Al"] == 0, h  # predictor 1, no point transform
+        assert h["Nf"] == h["Ns"] == 2 and h["X"] * h["Nf"] == tw and h["Y"] == th, h
+        assert tw % (h["X"] * h["Nf"]) == 0
+        dec = np.asarray(imagecodecs.ljpeg_decode(tile)).reshape(th, tw)  # independent decoder
+        y, x = (k // tiles_x) * th, (k % tiles_x) * tw
+        ref = np.zeros((th, tw), np.uint16)
+        part = fr.mosaic[y : y + th, x : x + tw]
+        ref[: part.shape[0], : part.shape[1]] = part
+        assert np.array_equal(dec, ref), k
+    assert np.array_equal(_read(buf)["raw"], fr.mosaic)
+
+
+def test_lj92_extreme_differences() -> None:
+    """16-bit data with +-65535 jumps (SSSS 16, modulo-2^16 differences) round-trips."""
+    import imagecodecs
+
+    t = np.zeros((32, 32), np.uint16)
+    t[:, 2::4] = 65535
+    t[5, 7] = 1
+    t[9, :] = np.arange(32) * 2047
+    tile = dng._lj92_tile(t, 16)
+    assert np.array_equal(np.asarray(imagecodecs.ljpeg_decode(tile)).reshape(32, 32), t)
+    flat = dng._lj92_tile(np.full((16, 16), 7, np.uint16), 12)  # single-symbol histogram
+    assert np.array_equal(np.asarray(imagecodecs.ljpeg_decode(flat)).reshape(16, 16), np.full((16, 16), 7))
+
+
 def test_lj92_tile_size_option(frame_iso4000) -> None:  # type: ignore[no-untyped-def]
     head = frame_iso4000.head_sections()
     buf = dng.dng_encode(frame_iso4000.mosaic, head, compression="lj92", tile=128)
@@ -223,6 +274,22 @@ def test_exiftool_validate_no_errors(tmp_path: Path, frame_iso100) -> None:  # t
         assert "Error" not in txt, txt
 
 
+@needs_exiftool
+@pytest.mark.parametrize("bad", [b"\0" * 4096, b"II*\x00" + b"\x07" * 3000], ids=["zeros", "junk-tiff"])
+def test_failed_exif_transfer_is_reported(tmp_path: Path, frame_iso100, bad: bytes) -> None:  # type: ignore[no-untyped-def]
+    """An unusable skeleton must produce a warning, not a silent 'success' with no EXIF."""
+    out = tmp_path / "noexif.dng"
+    rep = dng.write_dng(frame_iso100.mosaic, frame_iso100.head_sections(), out, meta=bad)
+    assert any("copied no EXIF tags" in w for w in rep.warnings), rep.warnings
+    assert rep.exif and any("copied no EXIF tags" in w for w in rep.exif["warnings"])
+    assert out.exists()
+
+
+def test_xmp_extra_escaped() -> None:
+    x = dng.xmp_packet("sw", "half3", "d0.2", {"Note": 'a "b" <c> & d'}).decode()
+    assert 'rawsqueeze:Note="a &quot;b&quot; &lt;c&gt; &amp; d"' in x
+
+
 # ---------------------------------------------------------------------------------------
 # slow: real samples
 
@@ -242,7 +309,7 @@ def test_real_sample_lj92_with_exif(name: str, sample_path, tmp_path: Path) -> N
         t0 = time.perf_counter()
         rep = dng.write_dng(fr.mosaic, head, out, meta=payload, et=et)
         dt = time.perf_counter() - t0
-        assert 20.5e6 < rep.size < 23.0e6, rep.size
+        assert 19.5e6 < rep.size < 21.5e6, rep.size  # 2-comp predictor-1 LJ92 (was 21.6-22.0 MB, row-pair p6)
         assert dt < 5.0
         assert rep.exif and rep.exif["used_jpg_from_raw"]
         v = et.run(["-validate", "-error", "-warning", "-a", str(out)])
@@ -253,6 +320,15 @@ def test_real_sample_lj92_with_exif(name: str, sample_path, tmp_path: Path) -> N
         assert d["ExifIFD"] >= 40
         info = et.run_json(["-n", "-Make", "-Model", "-ISO", "-LensModel", "-Orientation", str(out)])[0]
         assert info["Make"] == fr.make and info["Model"] == fr.model and info["ISO"] == fr.iso
+        # IFD0 tags beyond Make/Model/Orientation, original file name, distortion parameters kept
+        g1 = et.run_json(["-G1", "-IFD0:ModifyDate", "-OriginalRawFileName", "-XMP-rawsqueeze:all", str(out)])[0]
+        src_mod = et.run_json(["-G1", "-IFD0:ModifyDate", str(src)])[0]
+        assert g1["IFD0:ModifyDate"] == src_mod["IFD0:ModifyDate"]
+        assert g1["IFD0:OriginalRawFileName"] == name
+        dist = meta.panasonic_distortion_info(payload)
+        assert dist and g1["XMP-rawsqueeze:PanasonicDistortionInfo"] == __import__("base64").b64encode(dist).decode()
+        assert any("WarpRectilinear" in w for w in rep.warnings)
+        assert not any("copied no EXIF" in w for w in rep.warnings)
     with rawpy.imread(str(out)) as r:
         assert np.array_equal(r.raw_image, fr.mosaic)
         assert list(r.black_level_per_channel) == fr.black_per_channel

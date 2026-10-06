@@ -8,7 +8,8 @@
     rawsqueeze verify IN.rsq --original IN.RW2 [--ev 0,2,3] [--tiles 4|--full] [--json]
     rawsqueeze bench IN... --sweep 'engine=half3;d=0.1,0.2,0.3' [--crop 2048] --csv out.csv
 
-Exit codes: 0 success; 1 error (any file); 2 verify below the DESIGN.md 6.4 thresholds.
+Exit codes: 0 success; 1 error (any file); 2 verify below the DESIGN.md 6.4 thresholds (or a
+requested criterion could not be measured); 130 interrupted (Ctrl-C).
 Batch encode/decode uses a ProcessPoolExecutor (``-j``) with ``cpu_count // jobs`` threads
 per worker; progress lines go to stderr, ``--json`` writes machine-readable reports to stdout.
 """
@@ -20,10 +21,12 @@ import json
 import math
 import multiprocessing
 import os
+import signal
 import sys
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -33,6 +36,7 @@ from . import __version__
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_VERIFY = 2
+EXIT_INTERRUPTED = 130
 
 RAW_EXTENSIONS = frozenset(
     {".rw2", ".nef", ".nrw", ".cr2", ".cr3", ".arw", ".srf", ".sr2", ".orf", ".raf", ".pef", ".dng",
@@ -45,14 +49,20 @@ FORMAT_SUFFIX = {"dng": ".dng", "npy": ".npy", "pgm16": ".pgm", "tiff": ".tiff"}
 # helpers
 
 
-def default_jobs() -> int:
-    """``max(1, min(cpu // 4, RAM_GB // 1.5))`` (DESIGN.md 4.2)."""
+JOB_RAM_GB = 1.5
+"""Per-file memory budget of ``default_jobs`` (measured peak: plain nlq encode 1.2 GB)."""
+JOB_RAM_GB_VERIFY = 3.0
+"""Budget with ``encode --verify`` (measured peak 2.8 GB RSS, PANA9831)."""
+
+
+def default_jobs(verify: bool = False) -> int:
+    """``max(1, min(cpu // 4, RAM_GB // budget))`` (DESIGN.md 4.2); budget 1.5 GB, 3 GB with verify."""
     cpu = os.cpu_count() or 1
     try:
         ram_gb = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2**30
     except (ValueError, OSError, AttributeError):
         ram_gb = 4.0
-    return max(1, min(cpu // 4, int(ram_gb // 1.5)))
+    return max(1, min(cpu // 4, int(ram_gb // (JOB_RAM_GB_VERIFY if verify else JOB_RAM_GB))))
 
 
 def _floats(s: str) -> list[float]:
@@ -75,7 +85,27 @@ class Job:
     src: Path
     dst: Path
     action: str = "run"
-    """run | skip | conflict"""
+    """run | skip | conflict (output exists) | duplicate (another input maps to the same output)"""
+    note: str = ""
+
+
+_CASE_INSENSITIVE_FS = sys.platform in ("darwin", "win32")
+
+
+def _out_key(p: Path) -> str:
+    """Duplicate-detection key; case-folded on (default) case-insensitive filesystems."""
+    s = os.path.normcase(os.fspath(p.resolve()))
+    return s.casefold() if _CASE_INSENSITIVE_FS else s
+
+
+def _drop_dng_siblings(files: list[Path]) -> list[Path]:
+    """Drop ``x.dng`` when a non-DNG raw ``x.*`` sits in the same folder.
+
+    ``rawsqueeze decode`` writes ``x.dng`` next to ``x.rsq`` by default, so after a
+    round-trip in one folder the decoded DNG would map to the same ``x.rsq`` as its raw.
+    """
+    stems = {(q.parent, q.stem.casefold()) for q in files if q.suffix.lower() != ".dng"}
+    return [q for q in files if q.suffix.lower() != ".dng" or (q.parent, q.stem.casefold()) not in stems]
 
 
 def plan_jobs(
@@ -91,9 +121,12 @@ def plan_jobs(
     """Map inputs (files or directories) to output paths.
 
     Directories contribute matching files (recursively with ``-r``); with ``-o DIR`` the
-    structure below the input directory is kept.  ``-o`` names a file only for a single
-    input file that is not an existing directory and does not end with a separator.
-    Raises ValueError on missing inputs or duplicate outputs.
+    structure below the input directory is kept.  When encoding a directory, a ``x.dng``
+    next to a raw ``x.*`` (a decoded copy) is ignored.  ``-o`` names a file only for a
+    single input file that is not an existing directory and does not end with a separator.
+    Raises ValueError on missing inputs or when the same input is given twice; two
+    different inputs mapping to one output make the later one a ``duplicate`` job (a
+    per-file error), so the rest of the batch still runs.
     """
     pairs: list[tuple[Path, Path]] = []  # (src, relative output name)
     any_dir = False
@@ -103,6 +136,8 @@ def plan_jobs(
             any_dir = True
             it = p.rglob("*") if recursive else p.glob("*")
             files = sorted(q for q in it if q.is_file() and want(q) and not q.name.startswith("."))
+            if suffix == ".rsq":
+                files = _drop_dng_siblings(files)
             pairs += [(q, q.relative_to(p).with_suffix(suffix)) for q in files]
         elif p.is_file():
             pairs.append((p, Path(p.name).with_suffix(suffix)))
@@ -114,17 +149,35 @@ def plan_jobs(
         o = Path(out)
         as_dir = len(pairs) != 1 or any_dir or o.is_dir() or out.endswith(("/", os.sep))
         jobs = [Job(src, (o / rel) if as_dir else o) for src, rel in pairs]
-    seen: dict[Path, Path] = {}
+    seen: dict[str, Path] = {}
     for j in jobs:
-        key = j.dst.resolve()
-        if key in seen:
-            raise ValueError(f"two inputs map to the same output {j.dst}: {seen[key]} and {j.src}")
-        if j.src.resolve() == key:
+        key = _out_key(j.dst)
+        if _out_key(j.src) == key:
             raise ValueError(f"output would overwrite the input: {j.src}")
+        if key in seen:
+            if _out_key(seen[key]) == _out_key(j.src):
+                raise ValueError(f"input given twice, two jobs map to the same output {j.dst}: {j.src}")
+            j.action = "duplicate"
+            j.note = f"output {j.dst} is also the output of {seen[key]} (rename one or use -o)"
+            continue
         seen[key] = j.src
         if j.dst.exists() and not overwrite:
             j.action = "skip" if skip_existing else "conflict"
     return jobs
+
+
+def _plan_reports(plan: Sequence[Job]) -> list[dict[str, Any]]:
+    """Reports for jobs that do not run (skip / conflict / duplicate)."""
+    out: list[dict[str, Any]] = []
+    for j in plan:
+        if j.action == "conflict":
+            out.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "error",
+                        "error": "output exists (use --overwrite or --skip-existing)"})
+        elif j.action == "duplicate":
+            out.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "error", "error": j.note})
+        elif j.action == "skip":
+            out.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "skipped"})
+    return out
 
 
 # ---------------------------------------------------------------------------------------
@@ -145,6 +198,18 @@ def _encode_job(job: dict[str, Any]) -> dict[str, Any]:
         return r.to_dict()
 
 
+def _encode_crash(job: dict[str, Any], msg: str) -> dict[str, Any]:
+    from .pipeline import EncodeReport
+
+    return EncodeReport(src=job["src"], dst=job["dst"], status="error", error=msg).to_dict()
+
+
+def _decode_crash(job: dict[str, Any], msg: str) -> dict[str, Any]:
+    from .pipeline import DecodeReport
+
+    return DecodeReport(src=job["src"], dst=job["dst"], status="error", fmt=job["fmt"], error=msg).to_dict()
+
+
 def _decode_job(job: dict[str, Any]) -> dict[str, Any]:
     from .pipeline import DecodeReport, decode_file
 
@@ -158,29 +223,96 @@ def _decode_job(job: dict[str, Any]) -> dict[str, Any]:
                             error=f"{type(exc).__name__}: {exc}").to_dict()
 
 
+CRASH_MESSAGE = "worker process crashed (out of memory, or a crash inside LibRaw/libjxl?)"
+
+
+def _worker_init() -> None:
+    """Pool workers ignore SIGINT: Ctrl-C is handled once, by the parent (``_run_jobs``)."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
+def _new_pool(n: int) -> ProcessPoolExecutor:
+    return ProcessPoolExecutor(max_workers=n, mp_context=multiprocessing.get_context("spawn"),
+                               initializer=_worker_init)
+
+
+def _kill_pool(ex: ProcessPoolExecutor | None) -> None:
+    """Cancel pending work and terminate the workers now (no waiting for running files)."""
+    if ex is None:
+        return
+    procs = list((getattr(ex, "_processes", None) or {}).values())
+    ex.shutdown(wait=False, cancel_futures=True)
+    for p in procs:
+        if p.is_alive():
+            p.terminate()
+    for p in procs:
+        p.join(timeout=5)
+
+
 def _run_jobs(
     fn: Callable[[dict[str, Any]], dict[str, Any]],
     jobs: list[dict[str, Any]],
     n_jobs: int,
     on_done: Callable[[int, dict[str, Any]], None],
-) -> list[dict[str, Any]]:
+    on_crash: Callable[[dict[str, Any], str], dict[str, Any]],
+) -> tuple[list[dict[str, Any]], bool]:
+    """Run ``fn`` over ``jobs``; returns ``(results in job order, interrupted)``.
+
+    * ``n_jobs > 1``: spawn worker pool.  If a worker dies (OOM kill, segfault) the pool
+      breaks and every unfinished job fails with ``BrokenProcessPool``; those jobs are
+      re-run one at a time in a fresh single-worker pool, and a job that crashes again
+      gets ``on_crash(job, CRASH_MESSAGE)`` as its result.  The batch always completes.
+    * Ctrl-C: pending jobs are cancelled and the workers terminated immediately; jobs
+      without a result get ``status: interrupted`` and ``interrupted`` is True.
+    """
     results: list[dict[str, Any]] = []
-    if n_jobs <= 1 or len(jobs) <= 1:
-        for k, j in enumerate(jobs, 1):
-            r = fn(j)
-            results.append(r)
-            on_done(k, r)
-        return results
-    ctx = multiprocessing.get_context("spawn")
-    with ProcessPoolExecutor(max_workers=n_jobs, mp_context=ctx) as ex:
-        futs = [ex.submit(fn, j) for j in jobs]
-        for k, fut in enumerate(as_completed(futs), 1):
-            r = fut.result()
-            results.append(r)
-            on_done(k, r)
+
+    def done(r: dict[str, Any]) -> None:
+        results.append(r)
+        on_done(len(results), r)
+
+    interrupted = False
+    ex: ProcessPoolExecutor | None = None
+    try:
+        if n_jobs <= 1 or len(jobs) <= 1:
+            for j in jobs:
+                done(fn(j))
+        else:
+            retry: list[dict[str, Any]] = []
+            ex = _new_pool(n_jobs)
+            futs = {ex.submit(fn, j): j for j in jobs}
+            for fut in as_completed(futs):
+                try:
+                    r = fut.result()
+                except BrokenProcessPool:
+                    retry.append(futs[fut])
+                    continue
+                done(r)
+            ex.shutdown(wait=True)
+            ex = None
+            pos = {id(j): i for i, j in enumerate(jobs)}
+            for j in sorted(retry, key=lambda j: pos[id(j)]):
+                if ex is None:
+                    ex = _new_pool(1)
+                try:
+                    r = ex.submit(fn, j).result()
+                except BrokenProcessPool:
+                    r = on_crash(j, CRASH_MESSAGE)
+                    _kill_pool(ex)
+                    ex = None
+                done(r)
+            if ex is not None:
+                ex.shutdown(wait=True)
+                ex = None
+    except KeyboardInterrupt:
+        interrupted = True
+        _kill_pool(ex)
+        have_src = {r["src"] for r in results}
+        results += [{"src": j["src"], "dst": j["dst"], "status": "interrupted"} for j in jobs
+                    if j["src"] not in have_src]
     order = {j["src"]: i for i, j in enumerate(jobs)}
     results.sort(key=lambda r: order.get(r["src"], 0))
-    return results
+    return results, interrupted
 
 
 def _threads_for(args: argparse.Namespace, n_jobs: int) -> int:
@@ -210,6 +342,8 @@ def _encode_progress_line(k: int, n: int, r: dict[str, Any]) -> str:
         return f"[{k}/{n}] {name} ERROR {r.get('error')}"
     if r["status"] == "skipped":
         return f"[{k}/{n}] {name} skipped (exists: {r['dst']})"
+    if r["status"] == "interrupted":
+        return f"[{k}/{n}] {name} interrupted"
     rf = f"{r['ratio_file']:.2f}x" if r.get("ratio_file") else "-"
     rr = f" | raw {r['ratio_raw']:.2f}x" if r.get("ratio_raw") else ""
     line = (f"[{k}/{n}] {name} {_mb(r.get('src_size'))} -> {_mb(r.get('out_size'))} ({rf}{rr}) "
@@ -224,8 +358,9 @@ def _encode_progress_line(k: int, n: int, r: dict[str, Any]) -> str:
 
 def cmd_encode(args: argparse.Namespace) -> int:
     from .presets import resolve
+    from .tools import have
 
-    n_in_jobs = args.jobs if args.jobs else default_jobs()
+    n_in_jobs = args.jobs if args.jobs else default_jobs(verify=args.verify)
     try:
         plan = plan_jobs(args.inputs, args.output, recursive=args.recursive, suffix=".rsq",
                          want=lambda q: q.suffix.lower() in RAW_EXTENSIONS,
@@ -251,24 +386,25 @@ def cmd_encode(args: argparse.Namespace) -> int:
 
     n = len(plan)
     quiet = args.quiet
-    reports: list[dict[str, Any]] = []
-    failures = 0
-    for j in plan:
-        if j.action == "conflict":
-            failures += 1
-            reports.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "error",
-                            "error": "output exists (use --overwrite or --skip-existing)"})
-        elif j.action == "skip":
-            reports.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "skipped"})
+    reports = _plan_reports(plan)
+    failures = sum(r["status"] == "error" for r in reports)
     if args.dry_run:
         for k, j in enumerate(plan, 1):
-            what = {"run": "encode", "skip": "skip (exists)", "conflict": "ERROR output exists"}[j.action]
+            what = {"run": "encode", "skip": "skip (exists)", "conflict": "ERROR output exists",
+                    "duplicate": f"ERROR {j.note}"}[j.action]
             print(f"[{k}/{n}] {what}: {j.src} -> {j.dst} (preset {params.preset}, engine {params.engine}, "
                   f"d {params.d:g}, f {params.f:g}, threads {params.threads}, jobs {n_jobs})", file=sys.stderr)
         if args.json:
             _emit_json([{"src": os.fspath(j.src), "dst": os.fspath(j.dst), "action": j.action} for j in plan])
         return EXIT_ERROR if failures else EXIT_OK
 
+    if args.verify and params.engine in ("auto", "half3", "gat4"):
+        missing = [t for t in ("ssimulacra2", "butteraugli_main") if not have(t)]
+        if missing:
+            print(f"rawsqueeze: warning: --verify: {', '.join(missing)} not found; perceptual criteria cannot be "
+                  f"measured, so half3/gat4 results count as verify failures"
+                  + (" (auto falls back to nlq)" if params.engine == "auto" and not args.no_fallback else ""),
+                  file=sys.stderr)
     if not quiet:
         for k, r in enumerate(reports, 1):
             print(_encode_progress_line(k, n, r), file=sys.stderr)
@@ -281,22 +417,28 @@ def cmd_encode(args: argparse.Namespace) -> int:
         if not quiet:
             print(_encode_progress_line(done0 + k, n, r), file=sys.stderr, flush=True)
 
-    reports += _run_jobs(_encode_job, todo, n_jobs, on_done)
+    res, interrupted = _run_jobs(_encode_job, todo, n_jobs, on_done, _encode_crash)
+    reports += res
     wall = time.perf_counter() - t0
     ok = [r for r in reports if r["status"] in ("ok", "verify-failed")]
     errs = [r for r in reports if r["status"] == "error"]
     vfail = [r for r in reports if r["status"] == "verify-failed"]
+    n_int = sum(r["status"] == "interrupted" for r in reports)
     tin = sum(r.get("src_size") or 0 for r in ok)
     tout = sum(r.get("out_size") or 0 for r in ok)
     if not quiet:
         ratio = f" ({tin / tout:.2f}x)" if tout else ""
-        print(f"done: {len(reports)} files ({len(ok)} encoded, {sum(r['status'] == 'skipped' for r in reports)} "
-              f"skipped, {len(errs)} failed, {len(vfail)} verify-failed) {_mb(tin)} -> {_mb(tout)}{ratio} "
+        print(f"{'interrupted' if interrupted else 'done'}: {len(reports)} files ({len(ok)} encoded, "
+              f"{sum(r['status'] == 'skipped' for r in reports)} skipped, {len(errs)} failed, {len(vfail)} "
+              f"verify-failed{f', {n_int} not run' if n_int else ''}) {_mb(tin)} -> {_mb(tout)}{ratio} "
               f"in {wall:.1f}s (jobs {n_jobs}, threads {params.threads})", file=sys.stderr)
         for r in errs:
             _err(f"{r['src']}: {r.get('error')}")
     if args.json:
         _emit_json(reports)
+    if interrupted:
+        _err("interrupted")
+        return EXIT_INTERRUPTED
     if errs:
         return EXIT_ERROR
     return EXIT_VERIFY if vfail else EXIT_OK
@@ -312,6 +454,8 @@ def _decode_progress_line(k: int, n: int, r: dict[str, Any]) -> str:
         return f"[{k}/{n}] {name} ERROR {r.get('error')}"
     if r["status"] == "skipped":
         return f"[{k}/{n}] {name} skipped (exists: {r['dst']})"
+    if r["status"] == "interrupted":
+        return f"[{k}/{n}] {name} interrupted"
     extra = " lossless-verified" if r.get("lossless_verified") else ""
     return (f"[{k}/{n}] {name} -> {Path(r['dst']).name} {_mb(r.get('out_size'))} {r.get('engine')} "
             f"{r.get('mode')} dec {r.get('dec_s') or 0:.2f}s{extra}")
@@ -332,17 +476,12 @@ def cmd_decode(args: argparse.Namespace) -> int:
     n_jobs = max(1, min(n_in_jobs, sum(1 for j in plan if j.action == "run") or 1))
     threads = _threads_for(args, n_jobs)
     n = len(plan)
-    reports: list[dict[str, Any]] = []
-    for j in plan:
-        if j.action == "conflict":
-            reports.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "error",
-                            "error": "output exists (use --overwrite or --skip-existing)"})
-        elif j.action == "skip":
-            reports.append({"src": os.fspath(j.src), "dst": os.fspath(j.dst), "status": "skipped"})
+    reports = _plan_reports(plan)
     if args.dry_run:
         for k, j in enumerate(plan, 1):
-            print(f"[{k}/{n}] {j.action}: {j.src} -> {j.dst} ({args.format})", file=sys.stderr)
-        return EXIT_ERROR if any(j.action == "conflict" for j in plan) else EXIT_OK
+            print(f"[{k}/{n}] {j.action}: {j.src} -> {j.dst} ({args.format}){' ' + j.note if j.note else ''}",
+                  file=sys.stderr)
+        return EXIT_ERROR if any(j.action in ("conflict", "duplicate") for j in plan) else EXIT_OK
     if not args.quiet:
         for k, r in enumerate(reports, 1):
             print(_decode_progress_line(k, n, r), file=sys.stderr)
@@ -356,17 +495,23 @@ def cmd_decode(args: argparse.Namespace) -> int:
         if not args.quiet:
             print(_decode_progress_line(done0 + k, n, r), file=sys.stderr, flush=True)
 
-    reports += _run_jobs(_decode_job, todo, n_jobs, on_done)
+    res, interrupted = _run_jobs(_decode_job, todo, n_jobs, on_done, _decode_crash)
+    reports += res
     errs = [r for r in reports if r["status"] == "error"]
     if not args.quiet:
         ok = sum(r["status"] == "ok" for r in reports)
-        print(f"done: {len(reports)} files ({ok} decoded, {sum(r['status'] == 'skipped' for r in reports)} skipped, "
-              f"{len(errs)} failed) in {time.perf_counter() - t0:.1f}s (jobs {n_jobs}, threads {threads})",
-              file=sys.stderr)
+        n_int = sum(r["status"] == "interrupted" for r in reports)
+        print(f"{'interrupted' if interrupted else 'done'}: {len(reports)} files ({ok} decoded, "
+              f"{sum(r['status'] == 'skipped' for r in reports)} skipped, {len(errs)} failed"
+              f"{f', {n_int} not run' if n_int else ''}) in {time.perf_counter() - t0:.1f}s "
+              f"(jobs {n_jobs}, threads {threads})", file=sys.stderr)
         for r in errs:
             _err(f"{r['src']}: {r.get('error')}")
     if args.json:
         _emit_json(reports)
+    if interrupted:
+        _err("interrupted")
+        return EXIT_INTERRUPTED
     return EXIT_ERROR if errs else EXIT_OK
 
 
@@ -438,12 +583,21 @@ def cmd_info(args: argparse.Namespace) -> int:
 def cmd_verify(args: argparse.Namespace) -> int:
     from .container import RsqError
     from .pipeline import verify_file
-    from .verify import format_report
+    from .verify import format_report, validate_metrics
 
-    metrics = tuple(m for m in args.metrics.split(",") if m)
+    try:
+        metrics = validate_metrics(args.metrics.split(","))
+        if not args.ev:
+            raise ValueError("--ev needs at least one EV value")
+        if not args.full and args.tiles < 1:
+            raise ValueError(f"--tiles must be >= 1, got {args.tiles}")
+    except ValueError as exc:
+        _err(str(exc))
+        return EXIT_ERROR
     try:
         rep = verify_file(args.input, args.original, evs=args.ev, tiles=args.tiles, full=args.full,
-                          metrics=metrics, floor=not args.no_floor, threads=args.threads, workdir=args.workdir)
+                          metrics=metrics, floor=not args.no_floor, threads=args.threads, workdir=args.workdir,
+                          force=args.force)
     except (RsqError, OSError, ValueError) as exc:
         _err(f"{args.input}: {exc}")
         return EXIT_ERROR
@@ -496,7 +650,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="rawsqueeze",
         description="Adaptive dual-engine camera RAW compressor (.rsq container, JPEG XL payloads, DNG output).",
-        epilog="Exit codes: 0 ok, 1 error, 2 verify below threshold.",
+        epilog="Exit codes: 0 ok, 1 error, 2 verify below threshold or not measurable, 130 interrupted.",
     )
     p.add_argument("--version", action="version", version=f"rawsqueeze {__version__}")
     sub = p.add_subparsers(dest="command", metavar="COMMAND")
@@ -517,7 +671,7 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--layout", choices=list(LAYOUT_CHOICES), help="nlq/lossless layout (default from effort)")
     e.add_argument("--recon", default=None, choices=list(RECON_CHOICES), help="nlq LUT (default auto)")
     e.add_argument("--noise-model", default=None, help="auto | auto+iso_cap | manual:G,S2 (default auto+iso_cap)")
-    e.add_argument("--snr-threshold", type=float, default=None, help="auto engine SNR18 threshold (default 40)")
+    e.add_argument("--snr-threshold", type=float, default=None, help="auto engine SNR18 threshold (default 60)")
     e.add_argument("--no-matrix", action="store_true", help="half3: WB only, no camera->sRGB matrix")
     e.add_argument("--no-satmask", action="store_true", help="half3/gat4: no saturation mask (debug)")
     e.add_argument("--no-noise", action="store_true", help="forced half3: skip the noise estimate")
@@ -572,12 +726,15 @@ def build_parser() -> argparse.ArgumentParser:
     gv = v.add_mutually_exclusive_group()
     gv.add_argument("--tiles", type=int, default=4, help="number of 2048^2 tiles (default 4)")
     gv.add_argument("--full", action="store_true", help="whole image instead of tiles")
-    v.add_argument("--metrics", default="psnr,ssimulacra2,butteraugli,noise")
+    v.add_argument("--metrics", default="psnr,ssimulacra2,butteraugli,noise",
+                   help="comma-separated subset of psnr,ssimulacra2,butteraugli,noise")
     v.add_argument("--no-floor", action="store_true", help="skip the FLOOR control")
     v.add_argument("--threads", type=int)
     v.add_argument("--workdir", help="keep PPMs here (default: temp dir)")
     v.add_argument("--report", help="also write the JSON report to this path")
     v.add_argument("--json", action="store_true")
+    v.add_argument("--force", action="store_true",
+                   help="compare even if the original's mosaic sha256 does not match the .rsq HEAD")
     v.set_defaults(func=cmd_verify)
 
     # bench
@@ -597,7 +754,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return int(args.func(args))
     except KeyboardInterrupt:
         _err("interrupted")
-        return 130
+        return EXIT_INTERRUPTED
 
 
 if __name__ == "__main__":

@@ -2,8 +2,9 @@
 
 * :func:`build_tags` -- DNG IFD tags from a HEAD-like dict (or a :class:`RawFrame`).
 * :class:`LJ92DNG` -- pidng ``RAW2DNG`` subclass: 256x256 LJ92 tiles encoded in a thread
-  pool (each tile reshaped to ``(th/2, 2*tw)`` so the predictor's "above" neighbour has the
-  same CFA colour), or uncompressed 12/16-bit strips.
+  pool in Adobe DNG Converter's layout (2 interleaved components = even/odd columns,
+  predictor 1, frame ``th x tw/2``; readable by LibRaw, the Adobe SDK, Apple and rawspeed),
+  or uncompressed 12/16-bit strips.
 * :func:`write_dng` -- atomic write (tmp + rename), optional EXIF transfer from META.
 * :func:`dng_bytes16` -- uncompressed 16-bit DNG as bytes (deterministic verify pipeline).
 
@@ -15,6 +16,7 @@ filename (it appends ``.dng``).  EXIF sub-IFDs are added afterwards by exiftool.
 
 from __future__ import annotations
 
+import base64
 import os
 import tempfile
 import time
@@ -25,7 +27,6 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-import imagecodecs
 import numpy as np
 from pidng.core import RAW2DNG
 from pidng.defs import CalibrationIlluminant, Compression, DNGVersion, PhotometricInterpretation
@@ -240,10 +241,20 @@ def _ascii(s: str) -> str:
     return s.encode("ascii", errors="replace").decode("ascii")
 
 
-def xmp_packet(software: str, engine: str | None, param: str | None) -> bytes:
-    """Minimal XMP packet with ``rawsqueeze:Engine`` / ``rawsqueeze:Param`` (Q10)."""
+def _xml_attr(s: str) -> str:
+    return (str(s).replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+def xmp_packet(
+    software: str, engine: str | None, param: str | None, extra: Mapping[str, str] | None = None
+) -> bytes:
+    """Minimal XMP packet with ``rawsqueeze:Engine`` / ``rawsqueeze:Param`` (Q10).
+
+    ``extra``: further ``rawsqueeze:<Name>`` attributes (e.g. ``PanasonicDistortionInfo``).
+    """
     eng = engine or ""
     par = param or ""
+    more = "".join(f'\n   rawsqueeze:{k}="{_xml_attr(v)}"' for k, v in (extra or {}).items())
     body = (
         '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>\n'
         '<x:xmpmeta xmlns:x="adobe:ns:meta/">\n'
@@ -253,7 +264,7 @@ def xmp_packet(software: str, engine: str | None, param: str | None) -> bytes:
         '    xmlns:rawsqueeze="http://ns.rawsqueeze.org/1.0/"\n'
         f'   xmp:CreatorTool="{software}"\n'
         f'   rawsqueeze:Engine="{eng}"\n'
-        f'   rawsqueeze:Param="{par}"/>\n'
+        f'   rawsqueeze:Param="{par}"{more}/>\n'
         " </rdf:RDF>\n"
         "</x:xmpmeta>\n"
         '<?xpacket end="w"?>'
@@ -271,6 +282,7 @@ def build_tags(
     noise_profile: bool = True,
     software: str | None = None,
     xmp: bool = True,
+    xmp_extra: Mapping[str, str] | None = None,
 ) -> DNGTags:
     """DNG tags for the raw IFD (DESIGN.md 3.5 step 2 / appendix A.4).
 
@@ -314,14 +326,14 @@ def build_tags(
     t.set(Tag.DefaultCropSize, spec.crop_size)
     if spec.noise_profile:
         t.set(Tag.NoiseProfile, [float(v) for v in spec.noise_profile])
-    if xmp and "(" in spec.software:
+    if xmp and ("(" in spec.software or xmp_extra):
         sw = spec.software
         eng = par = None
         if "(" in sw and sw.endswith(")"):
             inner = sw[sw.index("(") + 1 : -1].split(" ", 1)
             eng = inner[0]
             par = inner[1] if len(inner) > 1 else ""
-        t.set(Tag.XMP_Metadata, list(xmp_packet(_ascii(sw), eng, par)))
+        t.set(Tag.XMP_Metadata, list(xmp_packet(_ascii(sw), eng, par, xmp_extra)))
     t.software = _ascii(spec.software)  # type: ignore[attr-defined]
     return t
 
@@ -345,10 +357,132 @@ def pack12(m: np.ndarray) -> bytes:
     return out.tobytes()
 
 
+# Lossless JPEG (ITU T.81 process 14) tile encoder in the layout of Adobe DNG Converter:
+# two interleaved components (the even / odd columns of the CFA tile), predictor 1, frame
+# = th rows x tw/2 columns.  Each component's left neighbour is the same CFA colour two
+# pixels to the left.  rawspeed (darktable) only accepts predictor 1 with a frame that
+# tiles the DNG tile, which the single-component imagecodecs/liblj92 encoders cannot do.
+
+_BITLEN = np.zeros(1 << 16, np.int64)
+_BITLEN[1:] = np.floor(np.log2(np.arange(1, 1 << 16))).astype(np.int64) + 1
+
+
+def _huffman_lengths(freq: np.ndarray, limit: int = 16) -> np.ndarray:
+    """JPEG (T.81 K.2) optimal code lengths limited to ``limit`` bits; 0 for unused symbols.
+
+    A reserved pseudo-symbol keeps any real code from being all ones.
+    """
+    n = len(freq)
+    f = [int(v) for v in freq] + [1]  # reserved symbol n
+    size = [0] * (n + 1)
+    others = [-1] * (n + 1)
+    while True:
+        live = [(v, i) for i, v in enumerate(f) if v > 0]
+        if len(live) < 2:
+            break
+        c1 = min(live, key=lambda t: (t[0], -t[1]))[1]
+        f2 = [(v, i) for v, i in live if i != c1]
+        c2 = min(f2, key=lambda t: (t[0], -t[1]))[1]
+        f[c1] += f[c2]
+        f[c2] = 0
+        size[c1] += 1
+        while others[c1] >= 0:
+            c1 = others[c1]
+            size[c1] += 1
+        others[c1] = c2
+        size[c2] += 1
+        while others[c2] >= 0:
+            c2 = others[c2]
+            size[c2] += 1
+    bits = [0] * 33
+    for i in range(n + 1):
+        if size[i]:
+            bits[size[i]] += 1
+    for i in range(32, limit, -1):  # K.3: limit code lengths
+        while bits[i] > 0:
+            j = i - 2
+            while bits[j] == 0:
+                j -= 1
+            bits[i] -= 2
+            bits[i - 1] += 1
+            bits[j + 1] += 2
+            bits[j] -= 1
+    i = limit
+    while bits[i] == 0:
+        i -= 1
+    bits[i] -= 1  # drop the reserved symbol (longest code)
+    # assign lengths to symbols by decreasing frequency (ties: lower symbol first)
+    order = sorted((i for i in range(n) if freq[i] > 0), key=lambda i: (-int(freq[i]), i))
+    lengths = np.zeros(n, np.int64)
+    k = 0
+    for ln in range(1, limit + 1):
+        for _ in range(bits[ln]):
+            lengths[order[k]] = ln
+            k += 1
+    return lengths
+
+
 def _lj92_tile(t: np.ndarray, bps: int) -> bytes:
+    """One DNG tile as a 2-component, predictor-1 lossless JPEG (see above)."""
     th, tw = t.shape
-    t2 = np.ascontiguousarray(t.reshape(th // 2, tw * 2))
-    return bytes(imagecodecs.ljpeg_encode(t2, bitspersample=bps))
+    if tw % 2:
+        raise ValueError(f"LJ92 tile width must be even, got {tw}")
+    x = t.astype(np.int64)
+    pred = np.empty_like(x)
+    pred[:, 2:] = x[:, :-2]
+    pred[1:, :2] = x[:-1, :2]
+    pred[0, :2] = 1 << (bps - 1)
+    d = ((x - pred) & 0xFFFF).ravel()
+    d[d >= 32768] -= 65536
+    ssss = _BITLEN[np.abs(d) & 0xFFFF]
+    ssss[d == -32768] = 16
+    freq = np.bincount(ssss, minlength=17)
+    lengths = _huffman_lengths(freq)
+    # canonical codes: by length, then symbol value (the DHT lists symbols in that order)
+    huffval = sorted((i for i in range(17) if lengths[i]), key=lambda i: (lengths[i], i))
+    codes = np.zeros(17, np.int64)
+    code, prev = 0, 0
+    for sym in huffval:
+        code <<= int(lengths[sym]) - prev
+        prev = int(lengths[sym])
+        codes[sym] = code
+        code += 1
+    nextra = np.where(ssss == 16, 0, ssss)
+    extra = np.where(d < 0, d - 1, d) & ((1 << nextra) - 1)
+    L = lengths[ssss] + nextra
+    v = (codes[ssss] << nextra) | extra
+    end = np.cumsum(L)
+    total = int(end[-1])
+    pos = end - L
+    word = pos >> 5
+    off = pos & 31
+    spill = off + L - 32
+    fits = spill <= 0
+    hi = np.where(fits, v << np.maximum(-spill, 0), v >> np.maximum(spill, 0))
+    nw = (total + 31) // 32 + 1
+    words = np.bincount(word, weights=hi.astype(np.float64), minlength=nw)
+    if not fits.all():
+        sp = ~fits
+        lo = (v[sp] & ((1 << spill[sp]) - 1)) << (32 - spill[sp])
+        words += np.bincount(word[sp] + 1, weights=lo.astype(np.float64), minlength=nw)
+    w32 = words.astype(np.uint64).astype(np.uint32)
+    nbytes = (total + 7) // 8
+    pad = nbytes * 8 - total
+    if pad:  # fill the last byte with 1-bits (T.81 F.1.2.3)
+        last = total - 1 + pad  # index of the last bit
+        w32[last >> 5] |= np.uint32(((1 << pad) - 1) << (31 - (last & 31)))
+    data = np.frombuffer(w32.astype(">u4").tobytes()[:nbytes], np.uint8)
+    ff = np.flatnonzero(data == 0xFF)
+    if ff.size:
+        data = np.insert(data, ff + 1, 0)  # byte stuffing
+    nsym = len(huffval)
+    hdr = bytearray(b"\xff\xd8")
+    hdr += b"\xff\xc3" + bytes([0, 14, bps, th >> 8, th & 255, (tw // 2) >> 8, (tw // 2) & 255, 2,
+                                  0, 0x11, 0, 1, 0x11, 0])
+    bits_count = [sum(1 for s in huffval if lengths[s] == ln) for ln in range(1, 17)]
+    hdr += b"\xff\xc4" + bytes([0, 19 + nsym, 0]) + bytes(bits_count) + bytes(huffval)
+    hdr += b"\xff\xda" + bytes([0, 10, 2, 0, 0x00, 1, 0x00, 1, 0, 0])
+    return bytes(hdr) + data.tobytes() + b"\xff\xd9"
 
 
 def encode_lj92_tiles(raw: np.ndarray, bps: int, tile: tuple[int, int] = (256, 256), threads: int | None = None) -> list[bytes]:
@@ -378,15 +512,21 @@ def effective_tile(width: int, tile: tuple[int, int]) -> tuple[int, int]:
     image (rows after the first tile row come back wrong; measured).  If ``tw > width``:
     ``tw = width`` when width is a multiple of 16, else ``16 * ceil(width / 32)`` so there
     are two tile columns (the last one partial, which LibRaw handles).
+
+    LibRaw also treats a 2-component LJ92 tile specially when ``2 * tw == width`` (it then
+    reads two tile rows per JPEG row: ``jh.clrs * jwide == raw_width`` in
+    ``lossless_dng_load_raw``), so that width is avoided by halving the tile width.
     """
     tw, th = tile
     if tw > width:
         tw = width if width % 16 == 0 else max(16, 16 * -(-width // 32))
+    if 2 * tw == width:
+        tw = tw // 2 if (tw // 2) % 16 == 0 else width
     return tw, th
 
 
 class LJ92DNG(RAW2DNG):
-    """pidng writer with imagecodecs LJ92 tiles (parallel) or uncompressed strips.
+    """pidng writer with LJ92 tiles (:func:`_lj92_tile`, parallel) or uncompressed strips.
 
     Configure with attributes before ``convert``: ``compression`` ('lj92'|'none12'|'none16'),
     ``tile`` (tw, th), ``threads``.  ``options(tags, path="")`` then ``convert(mosaic)``
@@ -457,6 +597,7 @@ def dng_encode(
     threads: int | None = None,
     noise_profile: bool = True,
     bps: int | None = None,
+    xmp_extra: Mapping[str, str] | None = None,
 ) -> bytes:
     """Encode ``mosaic`` (HxW uint16) + HEAD into DNG bytes (no EXIF transfer)."""
     if compression not in COMPRESSIONS:
@@ -474,7 +615,7 @@ def dng_encode(
     elif compression == "none12":
         bps = 12
     tags = build_tags(head, bps, tile=tl if compression == "lj92" else None, shape=m.shape, mosaic_max=mx,
-                      noise_profile=noise_profile)
+                      noise_profile=noise_profile, xmp_extra=xmp_extra)
     used_bps = tags.get(Tag.BitsPerSample).rawValue[0]
     if mx >= (1 << used_bps):
         raise ValueError(f"mosaic max {mx} does not fit BitsPerSample={used_bps}")
@@ -539,15 +680,25 @@ def write_dng(
     EXIF/MakerNotes/GPS are transferred with exiftool (``meta.transfer_exif``) into the tmp
     file before the rename.  ``path`` is used verbatim (no ``.dng`` appended).
     """
-    from .meta import transfer_exif
+    from .meta import panasonic_distortion_info, transfer_exif
 
     t0 = time.perf_counter()
-    buf = dng_encode(mosaic, head, compression=compression, tile=tile, threads=threads, noise_profile=noise_profile)
+    warnings: list[str] = []
+    xmp_extra: dict[str, str] = {}
+    if meta:
+        dist = panasonic_distortion_info(meta)
+        if dist:
+            # no DNG opcode is generated: keep the parameters and say so (docs/STATUS.md)
+            xmp_extra["PanasonicDistortionInfo"] = base64.b64encode(dist).decode("ascii")
+            warnings.append("camera lens distortion correction (Panasonic DistortionInfo) is not converted to a DNG "
+                            "WarpRectilinear opcode: Adobe/Apple renderers show the uncorrected lens geometry "
+                            "(parameters kept in XMP rawsqueeze:PanasonicDistortionInfo)")
+    buf = dng_encode(mosaic, head, compression=compression, tile=tile, threads=threads, noise_profile=noise_profile,
+                     xmp_extra=xmp_extra or None)
     t_enc = time.perf_counter() - t0
     dst = Path(path)
     dst.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=f".{dst.stem}.", suffix=".tmp.dng", dir=dst.parent)
-    warnings: list[str] = []
     exif_rep: dict[str, Any] | None = None
     t_exif = 0.0
     try:

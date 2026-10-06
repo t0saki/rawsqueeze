@@ -277,3 +277,112 @@ def test_full_sample_p1060444(sample_path):
     e = _err(fr, rec)
     assert abs(e.mean()) < 0.5
     assert (np.abs(e) > 50).mean() < 0.01
+
+
+# ---------------------------------------------------------------------------------------
+# review fixes: CFA-phase independent colour, gamut guard, no false saturation
+
+_PHASES = [((0, 1), (3, 2)), ((2, 3), (1, 0)), ((1, 0), (2, 3)), ((3, 2), (0, 1))]
+
+
+def test_matrix_and_wb_independent_of_cfa_phase(synthetic_frame_factory):
+    """LibRaw labels the green next to B with colour index 3 (BGGR/GBRG G1): rows by letter."""
+    ref = None
+    for pattern in _PHASES:
+        fr = synthetic_frame_factory(64, 64, pattern=pattern)
+        roles = fr.color_roles()
+        M, used = srgb_from_cam(fr, roles)
+        assert used, pattern
+        wb, src = white_balance(fr, roles)
+        out = get_engine("half3").encode(fr, EngineParams(quality=0.2, threads=1))
+        assert out.codec["half3"]["matrix"] is True
+        # daylight fallback must not hit the zero 4th entry either
+        dl, dsrc = white_balance(dataclasses.replace(fr, camera_wb=[0.0, 0.0, 0.0, 0.0]), roles)
+        assert dsrc == "daylight"
+        if ref is None:
+            ref = (M, wb, dl)
+        else:
+            assert np.array_equal(M, ref[0]) and wb == ref[1] and dl == ref[2], pattern
+
+
+def _blue_light_frame(synthetic_frame_factory):
+    """Gradient frame with a saturated blue patch (outside sRGB: negative R/G after M)."""
+    fr = synthetic_frame_factory(128, 128, g=0.06, s2=2.0)
+    m = fr.mosaic.copy()
+    roles = fr.color_roles()
+    lvl = {"R": 128 + 40, "G1": 128 + 260, "G2": 128 + 260, "B": 128 + 2600}
+    for role, v in lvl.items():
+        dy, dx = ((0, 0), (0, 1), (1, 0), (1, 1))[roles[role]]
+        m[32 + dy:96:2, 32 + dx:96:2] = v
+    return dataclasses.replace(fr, mosaic=m)
+
+
+def test_gamut_guard_blends_matrix(synthetic_frame_factory, monkeypatch):
+    from rawsqueeze.engines import half3
+
+    fr = _blue_light_frame(synthetic_frame_factory)
+    patch = (slice(40, 88), slice(40, 88))
+
+    def bias(rec):
+        e = rec[patch].astype(np.float64) - fr.mosaic[patch]
+        return [abs(e[dy::2, dx::2].mean()) for dy, dx in ((0, 0), (0, 1), (1, 0), (1, 1))]
+
+    out, head, _, rec = _roundtrip(fr, EngineParams(quality=0.2, threads=2))
+    blk = head["codec"]["half3"]
+    assert blk["matrix"] is True and 0 < blk["matrix_blend"] < 1 and blk["gamut_neg_sites"] > 0
+    M = np.array(blk["M"])
+    assert np.allclose(M @ np.array(blk["Minv"]), np.eye(3), atol=1e-10)
+    assert max(bias(rec)) < 4.0
+    # without the guard libjxl clamps the negative opsin mix: large one-sided raw bias
+    monkeypatch.setattr(half3, "gamut_blend", lambda cam, M, **kw: (0.0, 0))
+    _, head0, _, rec0 = _roundtrip(fr, EngineParams(quality=0.2, threads=2))
+    assert head0["codec"]["half3"]["matrix_blend"] == 0
+    assert max(bias(rec0)) > 20.0
+
+
+def test_gamut_blend_zero_for_in_gamut(frame_iso100):
+    from rawsqueeze.engines.half3 import gamut_blend
+
+    roles = frame_iso100.color_roles()
+    M, _ = srgb_from_cam(frame_iso100, roles)
+    cam = [np.full((8, 8), v, np.float32) for v in (0.3, 0.4, 0.35)]
+    assert gamut_blend(cam, M) == (0.0, 0)
+    cam[0][0, 0], cam[1][0, 0], cam[2][0, 0] = 0.02, 0.05, 0.95  # one saturated blue site
+    a, n = gamut_blend([c.copy() for c in cam], M, tolerance=0.0)
+    assert n == 1 and 0 < a < 1
+    assert gamut_blend(cam, M, tolerance=0.05) == (0.0, 1)  # tolerated isolated site
+
+
+def test_no_false_saturation(synthetic_frame_factory):
+    """Unmasked pixels just below wl must not decode to exactly wl (raw converters clip them)."""
+    fr = synthetic_frame_factory(128, 128, g=0.06, s2=2.0, saturate_frac=0.1)
+    m = fr.mosaic.astype(np.int32)
+    rng = np.random.default_rng(3)
+    band = (slice(48, 112), slice(0, 128))
+    m[band] = fr.white - rng.integers(1, 6, m[band].shape)
+    fr = dataclasses.replace(fr, mosaic=m.astype(np.uint16))
+    sat = fr.mosaic >= fr.white
+    for engine in ("half3", "gat4"):
+        eng = get_engine(engine)
+        out = eng.encode(fr, EngineParams(quality=0.2, threads=2, noise=[(0.06, 2.0)] * 4))
+        head = {**fr.head_sections(), "codec": out.codec}
+        rec = eng.decode(head, {c.name: c.payload for c in out.chunks})
+        assert np.all(rec[sat] == fr.white), engine
+        assert not np.any(rec[~sat] >= fr.white), engine
+
+
+@pytest.mark.slow
+def test_iso640_led_gamut_guard_and_auto_choice(sample_path, tmp_path):
+    """ISO640 stage-light sample: auto now picks nlq (SNR18 47.7 < 60); a forced half3 must not
+    clamp the saturated blue/cyan LEDs (was +3EV ss2 41.9 / ba_p3 7.56 before the gamut guard)."""
+    from rawsqueeze.pipeline import encode_file
+
+    src = sample_path("ISO640_PANA0036.RW2")
+    auto = encode_file(src, tmp_path / "auto.rsq", threads=8)
+    assert auto.engine == "nlq" and 40 < auto.snr18 < 60
+    rep = encode_file(src, tmp_path / "h3.rsq", engine="half3", threads=8, verify=True, fallback=False)
+    head = read_rsq(tmp_path / "h3.rsq").head
+    assert 0.1 < head["codec"]["half3"]["matrix_blend"] < 0.5
+    if rep.verify["worst"]["3.0"]["ba_p3"] is not None:  # metric tools installed
+        assert rep.verify["worst"]["3.0"]["ba_p3"] < 2.0
+        assert rep.verify["worst"]["3.0"]["ss2"] > 60.0

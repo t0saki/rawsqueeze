@@ -7,8 +7,13 @@ DESIGN.md section 2.5.  Encode (even-sized RGGB-like Bayer mosaic ``m``):
 3. ``wb = [cwb_R / cwb_G, 1, cwb_B / cwb_G]`` (colour-index lookup through the pattern), with
    the fallback chain camera -> daylight -> unity.
 4. ``c = xyz_to_cam[R,G,B rows] @ XYZ_FROM_SRGB``, rows normalised to sum 1, ``M = inv(c)``
-   (srgb_from_cam, dcraw convention).  ``M = I`` if the matrix is all-zero/singular or
-   ``use_matrix`` is off.  ``M`` and ``Minv`` are stored float64 in HEAD.
+   (srgb_from_cam, dcraw convention; rows picked by colour letter, so every CFA phase gets
+   the same matrix).  ``M = I`` if the matrix is all-zero/singular or ``use_matrix`` is off.
+   Gamut guard: libjxl's XYB clamps negative opsin mixes (``OPSIN @ rgb + bias``), which
+   rewrites saturated out-of-gamut colours (blue/cyan LEDs).  When more than
+   ``GAMUT_TOLERANCE`` of the sites would be clamped, ``M`` is blended towards ``I`` by the
+   smallest ``alpha`` that keeps them >= 0 (HEAD ``matrix_blend``).  ``M`` and ``Minv``
+   (of the blended matrix) are stored float64 in HEAD; the decoder only uses ``Minv``.
 5. ``rgb = stack([R*wbR, (G1+G2)/2, B*wbB]) @ M.T`` -> float32, NOT clipped -> ``H3RG``
    (3-channel VarDCT, distance ``d``, effort 5).
 6. ``D = (G1 - G2) + 0.5`` float32 -> ``H3DG`` (gray VarDCT, distance ``dD`` = ``d``).
@@ -16,7 +21,8 @@ DESIGN.md section 2.5.  Encode (even-sized RGGB-like Bayer mosaic ``m``):
 8. ``H3RG`` and ``H3DG`` are encoded in two threads, libjxl threads split 3:1.
 
 Decode uses only HEAD + chunks (never LibRaw): inverse matrix, inverse WB, ``G1/G2 = G -/+ D/2``,
-de-normalise with ``clip(rint(n*(wl-blk)+blk), blk, wl)``, then ``m[S] = wl``.
+de-normalise with ``clip(rint(n*(wl-blk)+blk), blk, wl-1)`` (``wl`` without a mask), then
+``m[S] = wl`` -- so unmasked pixels never decode as clipped.
 """
 
 from __future__ import annotations
@@ -132,20 +138,32 @@ def _valid_wb3(v: Sequence[float]) -> bool:
     return len(v) >= 3 and all(math.isfinite(float(x)) and float(x) > 0 for x in v)
 
 
-def white_balance(frame: RawFrame, roles: Mapping[str, int]) -> tuple[list[float], str]:
-    """``([wbR, 1, wbB], source)`` relative to G1, with fallback camera -> daylight -> unity.
+def _role_color_index(frame: RawFrame, roles: Mapping[str, int], role: str) -> int:
+    """LibRaw colour index used to look up WB / matrix rows for ``role``.
 
-    WB arrays are indexed by LibRaw colour index; the index of each role is looked up via the
-    pattern.  ``frame.camera_wb`` is already the effective WB from rawio, but invalid values
-    are re-checked here so frames built by hand also work.
+    The index is taken by colour *letter* (first occurrence in ``color_desc``), not from the
+    raw pattern: LibRaw labels one of the two greens with index 3 (e.g. BGGR is
+    ``[[2, 3], [1, 0]]``), and index 3 usually has no matrix row / a zero WB entry.
     """
     pat = np.asarray(frame.pattern, dtype=np.int64)
+    dy, dx = cfa.POSITIONS[roles[role]]
+    idx = int(pat[dy, dx])
+    desc = cfa._desc_str(frame.color_desc)
+    if 0 <= idx < len(desc):
+        first = desc.find(desc[idx])
+        if first >= 0:
+            return first
+    return idx
 
-    def cidx(role: str) -> int:
-        dy, dx = cfa.POSITIONS[roles[role]]
-        return int(pat[dy, dx])
 
-    ir, ig, ib = cidx("R"), cidx("G1"), cidx("B")
+def white_balance(frame: RawFrame, roles: Mapping[str, int]) -> tuple[list[float], str]:
+    """``([wbR, 1, wbB], source)`` relative to G, with fallback camera -> daylight -> unity.
+
+    WB arrays are indexed by LibRaw colour index; the index of each role is looked up by
+    colour letter (:func:`_role_color_index`).  ``frame.camera_wb`` is already the effective
+    WB from rawio, but invalid values are re-checked here so frames built by hand also work.
+    """
+    ir, ig, ib = (_role_color_index(frame, roles, r) for r in ("R", "G1", "B"))
     for wb, src in ((frame.camera_wb, frame.wb_source or "camera"), (frame.daylight_wb, "daylight")):
         w = [float(x) for x in wb]
         if len(w) > max(ir, ig, ib):
@@ -158,19 +176,16 @@ def white_balance(frame: RawFrame, roles: Mapping[str, int]) -> tuple[list[float
 def srgb_from_cam(frame: RawFrame, roles: Mapping[str, int], *, use_matrix: bool = True) -> tuple[np.ndarray, bool]:
     """``(M, matrix_used)``: dcraw-convention srgb_from_cam (rows of cam matrix normalised).
 
-    Falls back to the identity (WB only) when disabled, all-zero, non-finite or singular.
+    Matrix rows are selected by colour letter (independent of the CFA phase).  Falls back
+    to the identity (WB only) when disabled, all-zero, non-finite or singular.
     """
     eye = np.eye(3, dtype=np.float64)
     if not use_matrix:
         return eye, False
     xyz_to_cam = np.asarray(frame.xyz_to_cam, dtype=np.float64)
-    if xyz_to_cam.shape[0] < 3 or xyz_to_cam.shape[1] != 3:
+    if xyz_to_cam.ndim != 2 or xyz_to_cam.shape[0] < 3 or xyz_to_cam.shape[1] != 3:
         return eye, False
-    pat = np.asarray(frame.pattern, dtype=np.int64)
-    rows = []
-    for role in ("R", "G1", "B"):
-        dy, dx = cfa.POSITIONS[roles[role]]
-        rows.append(int(pat[dy, dx]))
+    rows = [_role_color_index(frame, roles, r) for r in ("R", "G1", "B")]
     if max(rows) >= xyz_to_cam.shape[0]:
         return eye, False
     cam = xyz_to_cam[rows]
@@ -187,6 +202,61 @@ def srgb_from_cam(frame: RawFrame, roles: Mapping[str, int], *, use_matrix: bool
     if not np.all(np.isfinite(M)):
         return eye, False
     return M, True
+
+
+# libjxl's XYB transform (lib/jxl/cms/opsin_params.h): mix = OPSIN @ rgb + bias is clamped to
+# >= 0 before the cube root, so colours with a negative mix are altered irreversibly.
+OPSIN_ABSORBANCE = np.array(
+    [
+        [0.30, 0.622, 0.078],
+        [0.23, 0.692, 0.078],
+        [0.24342268924547819, 0.20476744424496821, 0.55180986650955360],
+    ],
+    dtype=np.float64,
+)
+OPSIN_BIAS = 0.0037930732552754493
+GAMUT_TOLERANCE = 1e-6
+"""Fraction of half-resolution sites allowed to keep a negative opsin mix (isolated outliers)."""
+
+
+def gamut_blend(cam: Sequence[np.ndarray], M: np.ndarray, *, tolerance: float = GAMUT_TOLERANCE) -> tuple[float, int]:
+    """Smallest ``alpha`` so that ``(1-alpha)*M + alpha*I`` keeps every opsin mix >= 0.
+
+    ``cam``: the three WB-applied camera planes (non-negative).  With ``M = I`` every mix is
+    >= the bias (all opsin coefficients are positive), and the mix is linear in ``alpha``,
+    so the per-site requirement is ``-m / (n - m)`` for each negative mix ``m`` (``n``: the
+    mix with ``M = I``).  Up to ``tolerance * sites`` sites may stay negative.  Returns
+    ``(alpha, negative_sites_at_alpha0)``.
+    """
+    A = (OPSIN_ABSORBANCE @ M).astype(np.float32)
+    O = OPSIN_ABSORBANCE.astype(np.float32)
+    bias = np.float32(OPSIN_BIAS)
+    req: np.ndarray | None = None
+    for i in range(3):
+        m = cam[0] * A[i, 0]
+        m += cam[1] * A[i, 1]
+        m += cam[2] * A[i, 2]
+        m += bias
+        neg = m < 0
+        if not neg.any():
+            continue
+        mn = m[neg]
+        n = cam[0][neg] * O[i, 0] + cam[1][neg] * O[i, 1] + cam[2][neg] * O[i, 2] + bias
+        r = -mn / np.maximum(n - mn, np.float32(1e-12))
+        if req is None:
+            req = np.zeros(m.shape, dtype=np.float32)
+        sub = req[neg]
+        np.maximum(sub, r, out=sub)
+        req[neg] = sub
+    if req is None:
+        return 0.0, 0
+    pos = req[req > 0]
+    npos = int(pos.size)
+    k = int(tolerance * req.size)
+    if npos <= k:
+        return 0.0, npos
+    a = float(np.partition(pos, npos - k - 1)[npos - k - 1])
+    return min(1.0, a + 1e-3), npos
 
 
 def _matrix_from_json(v: Any) -> np.ndarray:
@@ -229,10 +299,19 @@ class Half3Engine:
         del planes
         wb, wb_source = white_balance(frame, roles)
         M, matrix_used = srgb_from_cam(frame, roles, use_matrix=params.use_matrix)
+        cam = (R * np.float32(wb[0]), (G1 + G2) * np.float32(0.5), B * np.float32(wb[2]))
+        alpha, neg_sites = 0.0, 0
+        if matrix_used:
+            # keep out-of-gamut colours representable in XYB (libjxl clamps negative opsin mixes)
+            alpha, neg_sites = gamut_blend(cam, M)
+            if alpha > 0:
+                Mb = (1.0 - alpha) * M + alpha * np.eye(3)
+                if abs(np.linalg.det(Mb)) < 1e-9:
+                    Mb, alpha = np.eye(3), 1.0
+                M = Mb
         Minv = np.linalg.inv(M)
 
         Mf = M.astype(np.float32)
-        cam = (R * np.float32(wb[0]), (G1 + G2) * np.float32(0.5), B * np.float32(wb[2]))
         h2, w2 = R.shape
         rgb = np.empty((h2, w2, 3), dtype=np.float32)
         for i in range(3):
@@ -268,6 +347,8 @@ class Half3Engine:
                 "M": M.tolist(),
                 "Minv": Minv.tolist(),
                 "matrix": bool(matrix_used),
+                "matrix_blend": round(float(alpha), 6),
+                "gamut_neg_sites": int(neg_sites),
                 "satmask": sat is not None,
                 "roles": [int(roles[r]) for r in ROLE_ORDER],
                 "normalize": "clip01",
@@ -322,13 +403,15 @@ class Half3Engine:
             "G2": cam[1] - Dh,
             "B": cam[2] / wb[2],
         }
+        # unmasked pixels never reach wl (the mask restores the clipped ones): no false clips
+        hi = white - 1 if "SATM" in chunks else white
         out = np.empty((H, W), dtype=np.uint16)
         for role in ROLE_ORDER:
             k = roles[role]
             dy, dx = cfa.POSITIONS[k]
             x = vals[role] * float(white - blk[k]) + float(blk[k])
             np.rint(x, out=x)
-            np.clip(x, blk[k], white, out=x)
+            np.clip(x, blk[k], max(blk[k], hi), out=x)
             out[dy::2, dx::2] = x.astype(np.uint16)
         apply_satm(out, chunks, white, required=bool(block.get("satmask", "SATM" in chunks)))
         return out
@@ -349,9 +432,13 @@ ENGINE = Half3Engine()
 
 __all__ = [
     "ENGINE",
+    "GAMUT_TOLERANCE",
     "Half3Engine",
+    "OPSIN_ABSORBANCE",
+    "OPSIN_BIAS",
     "XYZ_FROM_SRGB",
     "apply_satm",
+    "gamut_blend",
     "saturation_mask",
     "satm_chunk",
     "split_threads_3_1",

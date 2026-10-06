@@ -209,3 +209,173 @@ def test_plan_jobs_mapping(tmp_path: Path) -> None:
     assert beside[0].dst == tmp_path / "a/x.rsq"
     with pytest.raises(ValueError, match="same output"):
         plan_jobs([str(tmp_path / "a/x.RW2"), str(tmp_path / "a/x.RW2")], str(tmp_path / "o2"), recursive=False, **kw)
+
+
+# ---------------------------------------------------------------------------------------
+# review fixes: batch robustness, planning, verify/bench input errors
+
+
+def _job_ok_or_die(job: dict) -> dict:
+    """Pool job for the crash test: ``die`` jobs kill their worker process (like an OOM kill)."""
+    import os as _os
+
+    if job.get("die"):
+        _os._exit(9)
+    return {"src": job["src"], "dst": job["dst"], "status": "ok"}
+
+
+def test_run_jobs_survives_worker_crash() -> None:
+    from rawsqueeze.cli import CRASH_MESSAGE, _run_jobs
+
+    jobs = [{"src": f"f{i}", "dst": f"o{i}", "die": i == 2} for i in range(5)]
+    seen: list[str] = []
+    res, interrupted = _run_jobs(_job_ok_or_die, jobs, 2, lambda k, r: seen.append(r["src"]),
+                                 lambda j, msg: {"src": j["src"], "dst": j["dst"], "status": "error", "error": msg})
+    assert not interrupted and len(seen) == 5
+    assert [r["src"] for r in res] == [f"f{i}" for i in range(5)]
+    assert [r["status"] for r in res] == ["ok", "ok", "error", "ok", "ok"]
+    assert res[2]["error"] == CRASH_MESSAGE
+
+
+_SIGINT_SCRIPT = """
+import json, sys, time
+from rawsqueeze.cli import _run_jobs
+
+def slow(job):
+    time.sleep(30)
+    return {"src": job["src"], "dst": job["dst"], "status": "ok"}
+
+if __name__ == "__main__":
+    jobs = [{"src": f"f{i}", "dst": f"o{i}"} for i in range(6)]
+    print("started", flush=True)
+    res, interrupted = _run_jobs(slow, jobs, 2, lambda k, r: None, lambda j, m: {})
+    print(json.dumps({"interrupted": interrupted, "status": [r["status"] for r in res]}), flush=True)
+"""
+
+
+@pytest.mark.skipif(not hasattr(__import__("os"), "killpg"), reason="needs POSIX process groups")
+def test_ctrl_c_stops_parallel_batch(tmp_path: Path) -> None:
+    import os
+    import signal
+    import subprocess
+    import sys
+    import time
+
+    script = tmp_path / "sigint_batch.py"
+    script.write_text(_SIGINT_SCRIPT)
+    p = subprocess.Popen([sys.executable, str(script)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                         start_new_session=True)
+    assert p.stdout is not None
+    assert p.stdout.readline().strip() == "started"
+    time.sleep(2.5)  # workers spawned and busy
+    t0 = time.perf_counter()
+    os.killpg(p.pid, signal.SIGINT)  # like Ctrl-C in a terminal: the whole process group
+    out, err = p.communicate(timeout=20)
+    assert time.perf_counter() - t0 < 10, "batch kept running after Ctrl-C"
+    res = json.loads(out.strip().splitlines()[-1])
+    assert res == {"interrupted": True, "status": ["interrupted"] * 6}, err
+
+
+def test_plan_jobs_dng_sibling_and_duplicates(tmp_path: Path) -> None:
+    from rawsqueeze.cli import RAW_EXTENSIONS
+
+    d = tmp_path / "wf"
+    d.mkdir()
+    for p in ("a.RW2", "a.dng", "b.RW2", "c.dng", "x.RW2", "x.NEF"):
+        (d / p).write_bytes(b"0")
+    kw = dict(suffix=".rsq", want=lambda q: q.suffix.lower() in RAW_EXTENSIONS, overwrite=False, skip_existing=False)
+    jobs = plan_jobs([str(d)], None, recursive=False, **kw)
+    by_src = {j.src.name: j for j in jobs}
+    assert "a.dng" not in by_src  # decoded copy next to its raw is ignored
+    assert by_src["c.dng"].action == "run"  # a lone DNG is still an input
+    assert [by_src[n].action for n in ("a.RW2", "b.RW2")] == ["run", "run"]
+    # two different raws with one output: the later one is a per-file error, the batch still runs
+    assert sorted(by_src[n].action for n in ("x.NEF", "x.RW2")) == ["duplicate", "run"]
+    assert "also the output of" in next(j.note for j in jobs if j.action == "duplicate")
+
+
+@pytest.mark.skipif(__import__("sys").platform != "darwin", reason="case-insensitive default filesystem")
+def test_plan_jobs_case_insensitive_collision(tmp_path: Path) -> None:
+    (tmp_path / "d1").mkdir()
+    (tmp_path / "d2").mkdir()
+    (tmp_path / "d1/IMG.RW2").write_bytes(b"0")
+    (tmp_path / "d2/img.RW2").write_bytes(b"0")
+    kw = dict(suffix=".rsq", want=lambda q: True, overwrite=False, skip_existing=False)
+    jobs = plan_jobs([str(tmp_path / "d1/IMG.RW2"), str(tmp_path / "d2/img.RW2")], str(tmp_path / "out"),
+                     recursive=False, **kw)
+    assert [j.action for j in jobs] == ["run", "duplicate"]
+
+
+def test_roundtrip_in_one_folder_reencode(raws: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """encode DIR -> decode DIR (x.dng next to x.rsq) -> encode DIR --skip-existing must not abort."""
+    import shutil as _sh
+
+    _sh.copy(raws / "iso100.dng", raws / "iso100.RW2")  # stands in for the original raw
+    (raws / "iso100.dng").unlink()
+    (raws / "iso4000.dng").rename(raws / "other.dng")
+    assert main(["encode", str(raws), "--quiet"]) == EXIT_OK
+    assert main(["decode", str(raws), "--quiet", "--overwrite"]) == EXIT_OK  # writes iso100.dng next to iso100.RW2
+    assert (raws / "iso100.dng").exists()
+    _sh.copy(raws / "iso100.RW2", raws / "new.RW2")
+    capsys.readouterr()
+    assert main(["encode", str(raws), "--skip-existing", "--json"]) == EXIT_OK
+    reps = {Path(r["src"]).name: r["status"] for r in _json_out(capsys)}
+    assert reps["new.RW2"] == "ok" and "iso100.dng" not in reps
+
+
+def test_verify_input_errors(raws: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    rsq = tmp_path / "v.rsq"
+    assert main(["encode", str(raws / "iso100.dng"), "-o", str(rsq), "--preset", "lossless", "--quiet"]) == EXIT_OK
+    capsys.readouterr()
+    # typo in --metrics, empty --ev, --tiles 0: errors (exit 1), not a silent PASS
+    assert main(["verify", str(rsq), "--original", str(raws / "iso100.dng"), "--metrics", "ssim"]) == EXIT_ERROR
+    assert "unknown metric 'ssim'" in capsys.readouterr().err
+    assert main(["verify", str(rsq), "--original", str(raws / "iso100.dng"), "--ev", ""]) == EXIT_ERROR
+    assert main(["verify", str(rsq), "--original", str(raws / "iso100.dng"), "--tiles", "0"]) == EXIT_ERROR
+    # wrong original (same size): clear error before the expensive comparison; --force compares anyway
+    assert main(["verify", str(rsq), "--original", str(raws / "iso4000.dng"), "--metrics", "psnr"]) == EXIT_ERROR
+    err = capsys.readouterr().err
+    assert "does not match this .rsq" in err and "iso100.dng" in err
+    assert main(["verify", str(rsq), "--original", str(raws / "iso4000.dng"), "--metrics", "psnr", "--no-floor",
+                 "--ev", "3", "--tiles", "1", "--force"]) == EXIT_VERIFY
+    assert "does not match" in capsys.readouterr().out
+    # not a raw file / missing file: readable error, no traceback
+    fake = tmp_path / "fake.RW2"
+    fake.write_text("hello\n")
+    assert main(["verify", str(rsq), "--original", str(fake)]) == EXIT_ERROR
+    assert "not a camera raw file" in capsys.readouterr().err
+    assert main(["verify", str(rsq), "--original", str(tmp_path / "nope.RW2")]) == EXIT_ERROR
+    assert "file not found" in capsys.readouterr().err
+
+
+def test_load_raw_errors(tmp_path: Path) -> None:
+    from rawsqueeze.rawio import RawReadError, load_raw
+
+    fake = tmp_path / "fake.RW2"
+    fake.write_text("hello\n")
+    with pytest.raises(RawReadError, match="fake.RW2: not a camera raw file"):
+        load_raw(fake)
+    with pytest.raises(RawReadError, match="file not found"):
+        load_raw(tmp_path / "missing.RW2")
+    trunc = tmp_path / "trunc.dng"
+    trunc.write_bytes(b"II*\x00" + b"\x00" * 64)  # TIFF header, nothing else
+    with pytest.raises(RawReadError, match="trunc.dng: (file truncated or corrupt|unsupported camera raw format)"):
+        load_raw(trunc)
+
+
+def test_bench_survives_bad_input(raws: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    import csv as _csv
+
+    fake = tmp_path / "fake.RW2"
+    fake.write_text("hello\n")
+    out = tmp_path / "b.csv"
+    rc = main(["bench", str(fake), str(raws / "iso100.dng"), "--sweep", "engine=nlq;f=1", "--metrics", "psnr",
+               "--no-floor", "--ev", "3", "--tiles", "1", "--csv", str(out)])
+    assert rc == EXIT_ERROR  # one input failed
+    rows = list(_csv.DictReader(out.open()))
+    assert rows[0]["file"] == "fake.RW2" and rows[0]["error"]
+    assert any(r["file"] == "iso100.dng" and not r["error"] for r in rows)
+    # a typo in a sweep key is an error row, not a silent default-quality run
+    rc = main(["bench", str(raws / "iso100.dng"), "--sweep", "engine=nlq;ff=1", "--metrics", "psnr",
+               "--no-floor", "--ev", "3", "--tiles", "1", "--csv", str(tmp_path / "c.csv")])
+    assert rc == EXIT_ERROR and "unknown option 'ff'" in capsys.readouterr().err

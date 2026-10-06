@@ -6,7 +6,8 @@ DESIGN.md section 2.6.  For each position ``p`` with noise ``(g, s2)`` (var = g*
   domain); ``a = rint(y * K)`` as uint16 with fixed ``K = 100`` codes per sigma; ``a`` is coded
   with ``jpegxl_encode(a, distance=d, effort=5)`` into ``G4P0..G4P3``.
 * Decode: ``y = a / K``; ``x = ((g*y/2)^2 - 3/8*g^2 - s2) / g``; ``rint(x + blk_p)`` clipped to
-  ``[0, wl]``; saturated pixels restored from the same ``SATM`` mask as half3.
+  ``[0, wl-1]`` (``[0, wl]`` without a mask); saturated pixels restored from the same
+  ``SATM`` mask as half3, so unmasked pixels never decode as clipped.
 
 Deviation (documented): when ``K * y(wl - blk_p)`` would exceed 65535 (very low g, roughly
 g < 0.037 for a 12-bit range), that plane's K is lowered to ``floor(65535 / y_max)``; the
@@ -147,6 +148,7 @@ class Gat4Engine:
             if fc not in chunks:
                 raise ValueError(f"gat4 chunk {fc} missing")
         nthreads = max(1, resolve_threads(threads) // 4)
+        hi = white - 1 if "SATM" in chunks else white
         h2, w2 = H // 2, W // 2
 
         def dec(k: int) -> np.ndarray:
@@ -162,7 +164,7 @@ class Gat4Engine:
             x = gat_inv(y, g, s2)
             x += blk[k]
             np.rint(x, out=x)
-            np.clip(x, 0, white, out=x)
+            np.clip(x, 0, hi, out=x)
             return x.astype(np.uint16)
 
         with ThreadPoolExecutor(max_workers=4) as ex:

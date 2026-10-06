@@ -56,6 +56,10 @@ class EncodeError(ValueError):
     """The input cannot be encoded with the requested parameters."""
 
 
+class OriginalMismatchError(ValueError):
+    """``verify``: the given original is not the file the .rsq was encoded from."""
+
+
 class IntegrityError(RsqError):
     """Decoded mosaic does not match the sha256 recorded in HEAD (lossless)."""
 
@@ -513,22 +517,32 @@ def verify_file(
     floor: bool = True,
     threads: int | None = None,
     workdir: str | os.PathLike[str] | None = None,
+    force: bool = False,
 ) -> Any:
     """Spec 5.2: decode ``rsq_path``, load ``original_path`` and run :func:`verify.verify`.
 
-    ``sizes`` in the report holds bytes / ratio_file / ratio_raw / dec_s.  A warning is added
-    if the original's mosaic sha256 differs from HEAD (wrong original).
+    ``sizes`` in the report holds bytes / ratio_file / ratio_raw / dec_s.  The original is
+    checked first: if its mosaic sha256 differs from HEAD ``mosaic.sha256`` (wrong pairing)
+    :class:`OriginalMismatchError` is raised before the expensive decode/develop, unless
+    ``force`` (then it is only a warning).
     """
-    from .verify import verify
+    from .verify import validate_metrics, verify
 
+    metrics = validate_metrics(metrics)
     rsq = read_rsq(rsq_path)
-    t0 = time.perf_counter()
     warnings: list[str] = list(rsq.warnings)
+    frame = load_raw(original_path, want_exif=False)
+    want = rsq.head["mosaic"].get("sha256")
+    if want and frame.mosaic_sha256() != want:
+        src = rsq.head.get("source") or {}
+        msg = (f"original {Path(original_path).name} does not match this .rsq (encoded from "
+               f"{src.get('name')!r}, mosaic sha256 {str(want)[:16]}...)")
+        if not force:
+            raise OriginalMismatchError(msg + "; use --force to compare anyway")
+        warnings.append(msg)
+    t0 = time.perf_counter()
     rec = decode_chunks(rsq.head, rsq.chunks, threads=threads, warnings=warnings)
     dec_s = time.perf_counter() - t0
-    frame = load_raw(original_path, want_exif=False)
-    if frame.mosaic_sha256() != rsq.head["mosaic"].get("sha256"):
-        warnings.append("original mosaic sha256 differs from HEAD: is this the right original?")
     if frame.mosaic.shape != rec.shape:
         raise ValueError(f"original mosaic {frame.mosaic.shape} != decoded {rec.shape}")
     rep = verify(frame.mosaic, rec, rsq.head, evs, tiles, full=full, metrics=metrics, floor=floor,
@@ -655,6 +669,7 @@ def encode_file(
         t0 = time.perf_counter()
         vrep = _verify_encoding(frame, enc, blob, params)
         t["verify"] = time.perf_counter() - t0
+        rep.warnings += [f"verify: {w}" for w in vrep.warnings]
         acc = vrep.acceptance
         rep.verify = {"engine": enc.engine, "passed": vrep.passed, "failures": acc.get("failures", []),
                       "skipped": acc.get("skipped", []), "worst": vrep.to_dict().get("worst"),
@@ -743,6 +758,7 @@ __all__ = [
     "EncodeReport",
     "FrameEncoding",
     "IntegrityError",
+    "OriginalMismatchError",
     "bench_decode_fn",
     "bench_encode_fn",
     "build_head",

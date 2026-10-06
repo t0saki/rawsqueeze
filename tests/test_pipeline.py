@@ -26,6 +26,7 @@ from rawsqueeze.pipeline import (
 )
 from rawsqueeze.presets import resolve
 from rawsqueeze.rawio import RawFrame
+from rawsqueeze.select import DEFAULT_SNR_THRESHOLD
 
 
 def _roundtrip(chunks: list) -> tuple[bytes, object]:
@@ -72,7 +73,8 @@ def test_auto_selection_on_fixtures(frame_iso100: RawFrame, frame_iso4000: RawFr
     lo = encode_frame_ex(frame_iso100, resolve(threads=4))
     hi = encode_frame_ex(frame_iso4000, resolve(threads=4))
     assert lo.engine == "half3" and hi.engine == "nlq"
-    assert lo.head["noise"]["snr18"] >= 40 > hi.head["noise"]["snr18"]
+    assert lo.head["noise"]["snr18"] >= DEFAULT_SNR_THRESHOLD > hi.head["noise"]["snr18"]
+    assert lo.head["selection"]["threshold"] == DEFAULT_SNR_THRESHOLD == 60.0
     assert lo.head["noise"]["model"] == "auto+iso_cap"
     assert lo.head["selection"]["requested"] == "auto"
     assert hi.head["mosaic"]["recon_sha256"]  # nlq: free recon

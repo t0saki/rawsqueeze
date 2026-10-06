@@ -26,6 +26,13 @@ ENGINE_CHOICES: tuple[str, ...] = ("auto", "half3", "nlq", "gat4", "lossless")
 KEEP_PREVIEW_CHOICES: tuple[str, ...] = ("none", "small", "full")
 LAYOUT_CHOICES: tuple[str, ...] = ("planes", "stack4")
 RECON_CHOICES: tuple[str, ...] = ("auto", "mid", "centroid")
+KNOWN_KEYS: frozenset[str] = frozenset(
+    {"preset", "engine", "quality", "q", "d", "f", "dD", "effort", "layout", "recon", "noise_model",
+     "snr_threshold", "use_matrix", "matrix", "satmask", "store_meta", "meta", "noise", "recon_hash",
+     "threads", "keep_preview"}
+)
+EXTRA_KEYS: frozenset[str] = frozenset({"gat4_K"})
+"""Experimental engine options accepted into :attr:`EncodeParams.extra` (read by the engines)."""
 
 
 @dataclass(frozen=True)
@@ -122,11 +129,22 @@ def resolve(opts: Mapping[str, Any] | None = None, **kw: Any) -> EncodeParams:
     Accepted keys (mapping and/or keywords; keywords win): ``preset``, ``engine``,
     ``quality``/``q``, ``d``, ``f``, ``dD``, ``effort``, ``layout``, ``recon``,
     ``noise_model``, ``snr_threshold``, ``use_matrix``/``matrix``, ``satmask``, ``threads``,
-    ``keep_preview``, ``store_meta``/``meta``, ``noise``, ``recon_hash``.  Unknown keys go
-    to ``extra``.  ``None`` values mean "not given".  Raises ``ValueError`` on invalid input.
+    ``keep_preview``, ``store_meta``/``meta``, ``noise``, ``recon_hash``, plus the
+    experimental :data:`EXTRA_KEYS` (kept in ``extra``).  ``None`` values mean "not given".
+    Raises ``ValueError`` on invalid input, including unknown keys (a typo such as
+    ``qualty=`` would otherwise be ignored silently).
     """
     o: dict[str, Any] = {k: v for k, v in dict(opts or {}).items() if v is not None}
     o.update({k: v for k, v in kw.items() if v is not None})
+    unknown = sorted(k for k in o if k not in KNOWN_KEYS and k not in EXTRA_KEYS)
+    if unknown:
+        import difflib
+
+        allowed = sorted(KNOWN_KEYS | EXTRA_KEYS)
+        k = unknown[0]
+        hint = difflib.get_close_matches(k, allowed, 1)
+        raise ValueError(f"unknown option {k!r}" + (f"; did you mean {hint[0]!r}?" if hint else "")
+                         + (f" (also unknown: {', '.join(map(repr, unknown[1:]))})" if len(unknown) > 1 else ""))
 
     name = str(o.pop("preset", DEFAULT_PRESET))
     if name not in PRESETS:
@@ -205,7 +223,9 @@ def resolve(opts: Mapping[str, Any] | None = None, **kw: Any) -> EncodeParams:
 __all__ = [
     "DEFAULT_PRESET",
     "ENGINE_CHOICES",
+    "EXTRA_KEYS",
     "EncodeParams",
+    "KNOWN_KEYS",
     "KEEP_PREVIEW_CHOICES",
     "LAYOUT_CHOICES",
     "PRESETS",
