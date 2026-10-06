@@ -1,0 +1,40 @@
+[project]
+name = "rawsqueeze"
+version = "0.1.0"
+description = "Adaptive dual-engine camera RAW compressor (.rsq container, JPEG XL payloads, DNG output)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "imagecodecs>=2026.8.16",
+    "numpy>=2.4.4",
+    "pidng>=4.0.9",
+    "rawpy>=0.27.1",
+    "scikit-image>=0.26.0",
+    "tifffile>=2026.9.20",
+    "zstandard>=0.25.0",
+]
+
+[project.scripts]
+rawsqueeze = "rawsqueeze.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["rawsqueeze"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: needs the full-size sample RAW files in samples/ (skipped if absent)",
+]
+addopts = "-ra"
+
+[tool.uv.workspace]
+members = []
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

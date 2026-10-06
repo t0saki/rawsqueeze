@@ -1,0 +1,79 @@
+{
+ "black_per_channel": [
+  128,
+  128,
+  128,
+  128
+ ],
+ "black_per_position": [
+  128,
+  128,
+  128,
+  128
+ ],
+ "camera_wb": [
+  509.0,
+  256.0,
+  713.0,
+  256.0
+ ],
+ "camera_wb_raw": [
+  509.0,
+  256.0,
+  713.0,
+  0.0
+ ],
+ "color_desc": "RGBG",
+ "crop_ltwh": [
+  0,
+  0,
+  512,
+  512
+ ],
+ "crop_origin": [
+  2048,
+  2560
+ ],
+ "daylight_wb": [
+  2.13545823097229,
+  0.9385213255882263,
+  1.3926554918289185,
+  0.0
+ ],
+ "exif": {
+  "DateTimeOriginal": "2026:08:22 04:46:55",
+  "ExposureTime": 0.02,
+  "FNumber": 2.8,
+  "FocalLength": 42,
+  "ISO": 4000,
+  "LensModel": "LUMIX S 24-60/F2.8                                          ",
+  "Make": "Panasonic",
+  "Model": "DC-S9",
+  "Orientation": 1,
+  "RawDataOffset": 4901888
+ },
+ "flip": 0,
+ "frame_json_version": 1,
+ "iso": 4000,
+ "libraw_version": "0.22.1",
+ "make": "Panasonic",
+ "margins": [
+  0,
+  0
+ ],
+ "model": "DC-S9",
+ "mosaic_sha256": "0c5afb672c0648662065504c3748503e4ef30da08a70590d9c27f8ddf01e2993",
+ "num_colors": 3,
+ "raw_data_offset": 4901888,
+ "raw_type": "Flat",
+ "source_name": "P1037920.RW2",
+ "source_path": "/Users/tosaki/raw/samples/P1037920.RW2",
+ "source_sha256": "9abca0c614d337ee9602b9d1ffd0842a3493ffeddddf8520d8a9d4c9f502ec66",
+ "source_size": 27071488,
+ "visible_hw": [
+  512,
+  512
+ ],
+ "wb_source": "camera",
+ "white": 4079
+}
