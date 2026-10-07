@@ -3,6 +3,8 @@ name = "rawsqueeze"
 version = "0.1.0"
 description = "Adaptive dual-engine camera RAW compressor (.rsq container, JPEG XL payloads, DNG output)"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12"
 dependencies = [
     "imagecodecs>=2026.8.16",

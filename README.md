@@ -462,3 +462,9 @@ rawsqueeze 建立在这些项目之上：
 - [ExifTool](https://exiftool.org/)：元数据读写
 - [SSIMULACRA2](https://github.com/cloudinary/ssimulacra2) 和 [Butteraugli](https://github.com/google/butteraugli)：感知质量评估
 - 以及 NumPy、scikit-image、tifffile、zstandard、matplotlib
+
+---
+
+## 许可证
+
+[Apache License 2.0](LICENSE)。可自由使用、修改、商用；再分发时需保留 `LICENSE` 与 `NOTICE` 中的版权与署名信息，并注明所做的修改。

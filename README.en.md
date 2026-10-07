@@ -462,3 +462,9 @@ rawsqueeze is built on:
 - [ExifTool](https://exiftool.org/): metadata
 - [SSIMULACRA2](https://github.com/cloudinary/ssimulacra2) and [Butteraugli](https://github.com/google/butteraugli): perceptual quality metrics
 - and NumPy, scikit-image, tifffile, zstandard, matplotlib
+
+---
+
+## License
+
+[Apache License 2.0](LICENSE). Free to use, modify and use commercially; redistributions must retain the copyright and attribution notices in `LICENSE` and `NOTICE`, and state any changes made.
